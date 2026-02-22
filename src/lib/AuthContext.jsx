@@ -1,5 +1,6 @@
+// src/lib/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from './supabase';
+import { supabase } from './supabase.js';
 
 const AuthContext = createContext({});
 
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
       const { solana } = window;
 
       if (!solana?.isPhantom) {
-        alert("Instala a Phantom Wallet em https://phantom.app");
+        alert("Instala a Phantom Wallet!");
         return;
       }
 
