@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para conectar à Phantom Wallet
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -19,11 +18,9 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Conectar à wallet
       const response = await solana.connect();
       const walletAddress = response.publicKey.toString();
       
-      // Sincronizar com o perfil no Supabase
       const { data, error } = await supabase
         .from('perfil_mineiro')
         .select('*')
@@ -31,7 +28,6 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error && error.code === 'PGRST116') {
-        // Criar novo perfil se não existir
         const { data: newProfile } = await supabase
           .from('perfil_mineiro')
           .insert([{ 
@@ -55,3 +51,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  const disconnectWallet = () => {
+    setUser(null);
+    setProfileData(null);
+    if (window.solana) window.solana.disconnect();
+  };
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, profileData, loading, connectWallet, disconnectWallet }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
