@@ -10,7 +10,7 @@ const LoadingScreen = () => (
 );
 
 export default function App() {
-  const { user, loading, connectWallet, disconnectWallet, profileData } = useAuth();
+  const { user, loading, connectWallet, disconnectWallet, profileData, hasPhantom } = useAuth();
 
   if (loading) return <LoadingScreen />;
 
@@ -29,17 +29,27 @@ export default function App() {
             </p>
           </div>
 
-          <button 
-            onClick={connectWallet}
-            className="group relative px-16 py-8 bg-transparent border-2 border-cyan-400 text-cyan-400 font-black uppercase tracking-[0.4em] hover:bg-cyan-400 hover:text-black hover:shadow-[0_0_50px_rgba(6,182,212,0.9)] transition-all duration-500 active:scale-95 overflow-hidden"
-          >
-            <span className="relative z-10 text-xl">Conectar Phantom</span>
-            <div className="absolute inset-0 bg-cyan-400 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 -z-0" />
-          </button>
+          <div className="flex flex-col items-center gap-4">
+            <button 
+              onClick={connectWallet}
+              className={`group relative px-16 py-8 bg-transparent border-2 ${hasPhantom ? 'border-cyan-400 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]' : 'border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]'} font-black uppercase tracking-[0.4em] hover:shadow-[0_0_50px_rgba(6,182,212,0.9)] transition-all duration-500 active:scale-95 overflow-hidden`}
+            >
+              <span className="relative z-10 text-xl">
+                {hasPhantom ? 'Conectar Phantom' : 'Instalar Phantom'}
+              </span>
+              <div className={`absolute inset-0 ${hasPhantom ? 'bg-cyan-400' : 'bg-amber-500'} transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 -z-0`} />
+              <style dangerouslySetInnerHTML={{__html: '.group:hover span { color: black; }'}} />
+            </button>
+            
+            {!hasPhantom && (
+              <p className="text-amber-500/70 font-mono text-[9px] uppercase tracking-widest animate-pulse">
+                Extensão não detetada no navegador
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <div className="w-full max-w-md bg-black/60 border-2 border-cyan-500/40 p-10 backdrop-blur-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)] rounded-lg relative overflow-hidden">
-          {/* Linha Decorativa Superior */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
           
           <div className="flex justify-between items-start mb-12">
