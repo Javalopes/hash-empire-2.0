@@ -9,42 +9,48 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [hasPhantom, setHasPhantom] = useState(false);
 
-  // Sistema de deteção 2026 (Oficial Solana)
   useEffect(() => {
-    const getProvider = () => {
-      if ('solana' in window) {
-        const provider = window.solana;
-        if (provider.isPhantom) {
-          setHasPhantom(true);
-          return provider;
-        }
-      }
-      return null;
-    };
+    let checkInterval;
+    let attempts = 0;
 
-    const init = async () => {
-      const provider = getProvider();
+    const findPhantom = async () => {
+      // 1. Tentar encontrar o provider
+      const provider = window?.solana?.isPhantom ? window.solana : null;
+
       if (provider) {
+        console.log("PHANTOM DETETADA!");
+        setHasPhantom(true);
+        clearInterval(checkInterval);
+
         try {
-          // Tenta reconectar se o utilizador já confiou no site
+          // Tenta reconectar silenciosamente se já for confiável
           const resp = await provider.connect({ onlyIfTrusted: true });
           const address = resp.publicKey.toString();
           setUser(address);
           await fetchProfile(address);
         } catch (err) {
-          // Utilizador não está logado ou não confia, ignorar erro
+          // Não era confiável, ignorar
         }
+        setLoading(false);
+        return true;
       }
-      setLoading(false);
+      return false;
     };
 
-    // Aguarda o carregamento total da página para a extensão injetar
-    if (document.readyState === 'complete') {
-      init();
-    } else {
-      window.addEventListener('load', init);
-      return () => window.removeEventListener('load', init);
-    }
+    // 2. Tentar imediatamente
+    findPhantom();
+
+    // 3. Se não encontrou, tenta a cada 500ms durante 3 segundos
+    checkInterval = setInterval(() => {
+      attempts++;
+      const found = findPhantom();
+      if (found || attempts > 6) {
+        clearInterval(checkInterval);
+        setLoading(false);
+      }
+    }, 500);
+
+    return () => clearInterval(checkInterval);
   }, []);
 
   const fetchProfile = async (address) => {
@@ -64,25 +70,20 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfileData(data);
       }
-    } catch (e) {
-      console.error("Erro ao buscar perfil:", e);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const connectWallet = async () => {
     try {
-      const provider = window?.solana;
-      if (!provider) {
+      if (!window?.solana?.isPhantom) {
         window.open("https://phantom.app", "_blank");
         return;
       }
-      const resp = await provider.connect();
+      const resp = await window.solana.connect();
       const address = resp.publicKey.toString();
       setUser(address);
       await fetchProfile(address);
-    } catch (err) {
-      console.error("Conexão rejeitada:", err);
-    }
+    } catch (err) { console.error("Rejeitado", err); }
   };
 
   const disconnectWallet = async () => {
