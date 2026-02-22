@@ -9,78 +9,86 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [hasPhantom, setHasPhantom] = useState(false);
 
-  // 1. Detetar a extensão de forma agressiva
+  // Sistema de deteção 2026 (Oficial Solana)
   useEffect(() => {
-    const checkPhantom = () => {
-      if (window?.solana?.isPhantom) {
-        setHasPhantom(true);
-        // Tenta reconectar automaticamente se já houver permissão
-        window.solana.connect({ onlyIfTrusted: true })
-          .then(({ publicKey }) => {
-            const address = publicKey.toString();
-            setUser(address);
-            fetchProfile(address);
-          })
-          .catch(() => {})
-          .finally(() => setLoading(false));
-      } else {
-        // Se não encontrou, tenta novamente em 500ms (máx 5 vezes)
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          if (window?.solana?.isPhantom) {
-            setHasPhantom(true);
-            setLoading(false);
-            clearInterval(interval);
-          }
-          if (attempts > 5) {
-            setLoading(false);
-            clearInterval(interval);
-          }
-        }, 500);
+    const getProvider = () => {
+      if ('solana' in window) {
+        const provider = window.solana;
+        if (provider.isPhantom) {
+          setHasPhantom(true);
+          return provider;
+        }
       }
+      return null;
     };
 
-    checkPhantom();
+    const init = async () => {
+      const provider = getProvider();
+      if (provider) {
+        try {
+          // Tenta reconectar se o utilizador já confiou no site
+          const resp = await provider.connect({ onlyIfTrusted: true });
+          const address = resp.publicKey.toString();
+          setUser(address);
+          await fetchProfile(address);
+        } catch (err) {
+          // Utilizador não está logado ou não confia, ignorar erro
+        }
+      }
+      setLoading(false);
+    };
+
+    // Aguarda o carregamento total da página para a extensão injetar
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      window.addEventListener('load', init);
+      return () => window.removeEventListener('load', init);
+    }
   }, []);
 
   const fetchProfile = async (address) => {
-    const { data, error } = await supabase
-      .from('perfil_mineiro')
-      .select('*')
-      .eq('id', address)
-      .single();
-
-    if (error && error.code === 'PGRST116') {
-      const { data: newProfile } = await supabase
+    try {
+      const { data, error } = await supabase
         .from('perfil_mineiro')
-        .insert([{ id: address, wallet_address: address, pos_x: 500, pos_y: 500 }])
-        .select().single();
-      setProfileData(newProfile);
-    } else {
-      setProfileData(data);
+        .select('*')
+        .eq('id', address)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        const { data: newProfile } = await supabase
+          .from('perfil_mineiro')
+          .insert([{ id: address, wallet_address: address, pos_x: 500, pos_y: 500 }])
+          .select().single();
+        setProfileData(newProfile);
+      } else {
+        setProfileData(data);
+      }
+    } catch (e) {
+      console.error("Erro ao buscar perfil:", e);
     }
   };
 
   const connectWallet = async () => {
     try {
-      if (!window?.solana?.isPhantom) {
+      const provider = window?.solana;
+      if (!provider) {
         window.open("https://phantom.app", "_blank");
         return;
       }
-      const { publicKey } = await window.solana.connect();
-      const address = publicKey.toString();
+      const resp = await provider.connect();
+      const address = resp.publicKey.toString();
       setUser(address);
       await fetchProfile(address);
     } catch (err) {
-      console.error("Erro na conexão:", err);
+      console.error("Conexão rejeitada:", err);
     }
   };
 
-  const disconnectWallet = () => {
+  const disconnectWallet = async () => {
+    if (window.solana) await window.solana.disconnect();
     setUser(null);
     setProfileData(null);
-    if (window.solana) window.solana.disconnect();
   };
 
   return (
