@@ -1,39 +1,44 @@
 import React from 'react';
-import { Graphics, Text } from '@pixi/react';
+import { Graphics, Container, Text } from '@pixi/react';
+import { useAuth } from '../../../lib/AuthContext';
+import * as PIXI from 'pixi.js';
 
-const PLAYER_COLOR = 0xff00ff;
-const RADIUS = 20;
-const GLOW_RADIUS = 32;
-const GLOW_ALPHA = 0.18;
+export default function MultiplayerLayer({ players }) {
+  const { user } = useAuth(); // Puxamos o teu ID de wallet
 
-function drawPlayer(x, y) {
-  return g => {
-    g.clear();
-    // Glow
-    g.beginFill(PLAYER_COLOR, GLOW_ALPHA);
-    g.drawCircle(x, y, GLOW_RADIUS);
-    g.endFill();
-    // Main circle
-    g.beginFill(PLAYER_COLOR, 1);
-    g.drawCircle(x, y, RADIUS);
-    g.endFill();
-  };
+  return (
+    <Container>
+      {Object.entries(players)
+        // FILTRO CRÍTICO: Só desenha se o ID for DIFERENTE da minha wallet
+        .filter(([id]) => id !== user) 
+        .map(([id, player]) => (
+          <Container key={id} x={player.x} y={player.y}>
+            {/* Boneco Rosa Néon para os Outros */}
+            <Graphics
+              draw={(g) => {
+                g.clear();
+                g.beginFill(0xff00ff, 0.3); // Glow externo
+                g.drawCircle(0, 0, 15);
+                g.endFill();
+                g.beginFill(0xff00ff, 1);   // Centro sólido
+                g.drawCircle(0, 0, 8);
+                g.endFill();
+              }}
+            />
+            {/* Nome/Wallet do Jogador por cima */}
+            <Text
+              text={id.substring(0, 4) + "..."}
+              x={-15}
+              y={-30}
+              style={new PIXI.TextStyle({
+                fill: 0xff00ff,
+                fontSize: 10,
+                fontFamily: 'monospace',
+                fontWeight: 'bold'
+              })}
+            />
+          </Container>
+        ))}
+    </Container>
+  );
 }
-
-const MultiplayerLayer = ({ players, user }) => {
-  return Object.entries(players || {})
-    .filter(([id]) => id !== user)
-    .map(([id, data]) => (
-      <React.Fragment key={id}>
-        <Graphics draw={drawPlayer(data.x, data.y)} />
-        <Text
-          text={id}
-          x={data.x - 40}
-          y={data.y - RADIUS - 18}
-          style={{ fill: '#ff00ff', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' }}
-        />
-      </React.Fragment>
-    ));
-};
-
-export default React.memo(MultiplayerLayer);
