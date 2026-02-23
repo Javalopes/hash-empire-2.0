@@ -115,8 +115,10 @@ const LandLayer = ({ playerPos }) => {
         let fillColor = null;
         let borderColor = BASE_COLOR;
         let borderAlpha = BASE_ALPHA;
+        // Corrige comparação de ID
+        const isMine = lote && (lote.owner_id === user?.id || lote.owner_id === user);
         if (lote && lote.owner_id) {
-          if (user && lote.owner_id === user.id) {
+          if (isMine) {
             // Meu lote
             fillColor = HIGHLIGHT_COLOR;
             borderColor = 0xffd700; // Dourado
@@ -152,7 +154,7 @@ const LandLayer = ({ playerPos }) => {
             <Graphics
               draw={g => {
                 g.clear();
-                if (fillColor && user && lote && lote.owner_id === user.id) {
+                if (fillColor && isMine) {
                   g.beginFill(fillColor, 0.2);
                   g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
                   g.endFill();
@@ -164,7 +166,7 @@ const LandLayer = ({ playerPos }) => {
                   let color = 0x475569;
                   let alpha = 0.7;
                   // Se o lote for meu, portas ciano
-                  if (user && lote && lote.owner_id === user.id) {
+                  if (isMine) {
                     color = 0x22d3ee;
                     alpha = 0.9;
                   }

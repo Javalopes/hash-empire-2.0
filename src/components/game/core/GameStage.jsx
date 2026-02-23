@@ -50,8 +50,8 @@ export default function GameStage() {
         >
           <Container x={(window.innerWidth / 2) - camPos.x} y={(window.innerHeight / 2) - camPos.y}>
             <LandLayer playerPos={camPos} />
-            <BackgroundLayer />
             <MultiplayerLayer players={otherPlayers} myId={user} />
+            <BackgroundLayer />
             <EntityLayer 
               target={targetPos} 
               onMove={enviarPosicao} 
