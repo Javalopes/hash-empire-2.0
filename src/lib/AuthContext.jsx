@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'; // OBRIGATÓRIO
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from './supabase.js';
 
 const AuthContext = createContext({});
@@ -15,8 +15,6 @@ export const AuthProvider = ({ children }) => {
     let attempts = 0;
 
     const findPhantom = async () => {
-      console.log(`🔎 [DEBUG] Tentativa ${attempts} de encontrar Phantom...`);
-      
       const isPhantomInstalled = window?.solana?.isPhantom;
       
       if (isPhantomInstalled) {
@@ -25,7 +23,7 @@ export const AuthProvider = ({ children }) => {
         if (checkInterval) clearInterval(checkInterval);
 
         try {
-          console.log("📡 [DEBUG] Tentando conexão automática...");
+          // Tenta reconectar silenciosamente
           const resp = await window.solana.connect({ onlyIfTrusted: true });
           const address = resp.publicKey.toString();
           console.log("👤 [DEBUG] Auto-login:", address);
@@ -44,9 +42,7 @@ export const AuthProvider = ({ children }) => {
 
     checkInterval = setInterval(() => {
       attempts++;
-      const found = findPhantom();
-      if (found || attempts > 10) {
-        if (!found) console.warn("❌ [DEBUG] Phantom não encontrada após 10 tentativas.");
+      if (findPhantom() || attempts > 10) {
         clearInterval(checkInterval);
         setLoading(false);
       }
@@ -56,30 +52,50 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (address) => {
-    console.log("📥 [DEBUG] Buscando perfil:", address);
+    console.log("📥 [DEBUG] Buscando perfil para ID:", address);
     try {
+      // USAR maybeSingle() para evitar erro 406 se o perfil não existir
       const { data, error } = await supabase
         .from('perfil_mineiro')
         .select('*')
         .eq('id', address)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code === 'PGRST116') {
-        const { data: newProfile } = await supabase
+      if (error) {
+        console.error("❌ [DEBUG] Erro na busca:", error.message);
+        return;
+      }
+
+      if (!data) {
+        console.log("🆕 [DEBUG] Perfil inexistente. Criando registo...");
+        const { data: newProfile, error: insError } = await supabase
           .from('perfil_mineiro')
-          .insert([{ id: address, wallet_address: address, pos_x: 500, pos_y: 500 }])
-          .select().single();
-        setProfileData(newProfile);
+          .insert([{ 
+            id: address, 
+            wallet_address: address, 
+            pos_x: 500, 
+            pos_y: 500,
+            saldo_tokens: 0 
+          }])
+          .select()
+          .single();
+        
+        if (insError) {
+          console.error("❌ [DEBUG] Erro ao criar perfil:", insError.message);
+        } else {
+          setProfileData(newProfile);
+        }
       } else {
+        console.log("📊 [DEBUG] Perfil carregado com sucesso.");
         setProfileData(data);
       }
     } catch (e) {
-      console.error("💥 [DEBUG] Erro Fetch:", e);
+      console.error("💥 [DEBUG] Erro fatal no AuthContext:", e);
     }
   };
 
   const connectWallet = async () => {
-    console.log("🖱️ [DEBUG] Clique Conectar.");
+    console.log("🖱️ [DEBUG] Clique Conectar Wallet.");
     try {
       if (!window?.solana?.isPhantom) {
         window.open("https://phantom.app", "_blank");
@@ -90,7 +106,7 @@ export const AuthProvider = ({ children }) => {
       setUser(address);
       await fetchProfile(address);
     } catch (err) {
-      console.error("🚫 [DEBUG] Rejeitado:", err);
+      console.error("🚫 [DEBUG] Conexão rejeitada:", err);
     }
   };
 
