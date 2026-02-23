@@ -6,6 +6,7 @@ import EntityLayer from '../layers/EntityLayer.jsx';
 const width = window.innerWidth;
 const height = window.innerHeight;
 
+export default function GameStage() {
   const handleClick = useCallback((event) => {
     // Coordenadas do clique
     const rect = event.target.getBoundingClientRect();
