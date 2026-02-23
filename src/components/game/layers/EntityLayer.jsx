@@ -26,22 +26,22 @@ function drawMineiro(x, y) {
 
 const EntityLayer = React.memo(({ target, onMove, onPositionUpdate }) => {
   const { profileData } = useAuth();
-  // Inicializa exatamente com valores da DB
   const initialX = Number(profileData?.pos_x ?? INIT_X);
   const initialY = Number(profileData?.pos_y ?? INIT_Y);
   const posRef = useRef({ x: initialX, y: initialY });
   const [pos, setPos] = useState(posRef.current);
   const [targetPos, setTargetPos] = useState(target || posRef.current);
+  const hasSpawned = useRef(false);
 
-  // Sincronização forçada: atualiza posRef e targetPos assim que profileData carregar
   useEffect(() => {
-    if (profileData && profileData.pos_x != null && profileData.pos_y != null) {
+    if (profileData && profileData.pos_x != null && profileData.pos_y != null && !hasSpawned.current) {
       const dbX = Number(profileData.pos_x);
       const dbY = Number(profileData.pos_y);
       posRef.current.x = dbX;
       posRef.current.y = dbY;
       setPos({ x: dbX, y: dbY });
       setTargetPos({ x: dbX, y: dbY });
+      hasSpawned.current = true;
       if (typeof onPositionUpdate === 'function') onPositionUpdate(dbX, dbY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,6 +52,7 @@ const EntityLayer = React.memo(({ target, onMove, onPositionUpdate }) => {
   }, [target]);
 
   useTick(() => {
+    if (!profileData) return;
     // Bloqueia movimento até targetPos ser diferente da posição inicial
     if (targetPos.x === posRef.current.x && targetPos.y === posRef.current.y) return;
     const dx = targetPos.x - posRef.current.x;

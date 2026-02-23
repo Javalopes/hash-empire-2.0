@@ -9,9 +9,11 @@ import EntityLayer from '../layers/EntityLayer.jsx';
 export default function GameStage() {
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
-  const initialX = Number(profileData?.pos_x ?? 500);
-  const initialY = Number(profileData?.pos_y ?? 500);
-  const [targetPos, setTargetPos] = useState({ x: initialX, y: initialY });
+  const initialX = profileData && profileData.pos_x != null ? Number(profileData.pos_x) : null;
+  const initialY = profileData && profileData.pos_y != null ? Number(profileData.pos_y) : null;
+  const [targetPos, setTargetPos] = useState(
+    initialX !== null && initialY !== null ? { x: initialX, y: initialY } : null
+  );
 
   // Estado da câmara: segue o boneco
   const [camPos, setCamPos] = useState({ x: initialX, y: initialY });
