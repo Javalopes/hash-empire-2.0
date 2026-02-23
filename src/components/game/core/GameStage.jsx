@@ -18,27 +18,29 @@ export default function GameStage() {
   // Estado da câmara: segue o boneco
   const [camPos, setCamPos] = useState({ x: initialX, y: initialY });
 
-  // Captura o clique no mapa e define o novo destino
+  // Captura o clique no mapa e define o novo destino (compensando a câmara)
   const handlePointerDown = (e) => {
     const x = e.nativeEvent.offsetX;
     const y = e.nativeEvent.offsetY;
-    setTargetPos({ x, y });
+    // Compensa a câmara para obter coordenadas reais do mapa
+    const realX = x + camPos.x;
+    const realY = y + camPos.y;
+    setTargetPos({ x: realX, y: realY });
   };
 
   return (
-    <div onPointerDown={handlePointerDown} className="w-full h-full cursor-crosshair">
-      <Stage 
-        width={window.innerWidth} 
-        height={window.innerHeight} 
-        options={{ backgroundColor: 0x020617, antialias: true }}
-      >
-        <Container x={ (window.innerWidth / 2) - camPos.x } y={ (window.innerHeight / 2) - camPos.y }>
-          <BackgroundLayer />
-          <MultiplayerLayer players={otherPlayers} myId={user} />
-          {/* O EntityLayer recebe o destino e avisa o rádio (onMove) */}
-          <EntityLayer target={targetPos} onMove={enviarPosicao} onPositionUpdate={(x, y) => setCamPos({ x, y })} />
-        </Container>
-      </Stage>
-    </div>
+    <Stage 
+      width={window.innerWidth} 
+      height={window.innerHeight} 
+      options={{ backgroundColor: 0x020617, antialias: true }}
+      onPointerDown={handlePointerDown}
+    >
+      <Container x={ (window.innerWidth / 2) - camPos.x } y={ (window.innerHeight / 2) - camPos.y }>
+        <BackgroundLayer />
+        <MultiplayerLayer players={otherPlayers} myId={user} />
+        {/* O EntityLayer recebe o destino e avisa o rádio (onMove) */}
+        <EntityLayer target={targetPos} onMove={enviarPosicao} onPositionUpdate={(x, y) => setCamPos({ x, y })} />
+      </Container>
+    </Stage>
   );
 }
