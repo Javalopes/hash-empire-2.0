@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Stage, Container } from '@pixi/react';
 import BackgroundLayer from '../layers/BackgroundLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
+import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 
 const width = window.innerWidth;
 const height = window.innerHeight;
@@ -27,6 +28,7 @@ export default function GameStage() {
       <Container>
         <BackgroundLayer />
         <EntityLayer />
+        <MultiplayerLayer />
       </Container>
     </Stage>
   );
