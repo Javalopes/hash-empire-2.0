@@ -35,7 +35,7 @@ const EntityLayer = React.memo(() => {
   const posRef = useRef(pos);
 
   // Multiplayer sync
-  const sendPosicao = useGameSync(user, pos);
+  const { enviarPosicao } = useGameSync(user, pos);
 
   useEffect(() => {
     setTarget({
@@ -56,11 +56,11 @@ const EntityLayer = React.memo(() => {
       };
       setPos({ ...posRef.current });
       // Envia posição durante o movimento
-      if (typeof sendPosicao === 'function') sendPosicao(posRef.current.x, posRef.current.y);
+      if (typeof enviarPosicao === 'function') enviarPosicao(posRef.current.x, posRef.current.y);
     } else {
       posRef.current = { ...target };
       setPos({ ...target });
-      if (typeof sendPosicao === 'function') sendPosicao(target.x, target.y);
+      if (typeof enviarPosicao === 'function') enviarPosicao(target.x, target.y);
     }
   });
 
