@@ -1,4 +1,4 @@
-mport React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 
