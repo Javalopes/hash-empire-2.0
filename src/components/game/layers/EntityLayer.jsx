@@ -26,22 +26,23 @@ function drawMineiro(x, y) {
 
 const EntityLayer = React.memo(({ target, onMove }) => {
   const { profileData } = useAuth();
-  const posRef = useRef({
-    x: Number(profileData?.pos_x ?? INIT_X),
-    y: Number(profileData?.pos_y ?? INIT_Y),
-  });
+  // Inicializa exatamente com valores da DB
+  const initialX = Number(profileData?.pos_x ?? INIT_X);
+  const initialY = Number(profileData?.pos_y ?? INIT_Y);
+  const posRef = useRef({ x: initialX, y: initialY });
   const [pos, setPos] = useState(posRef.current);
   const [targetPos, setTargetPos] = useState(target || posRef.current);
 
-  // Atualiza posRef na primeira carga válida de profileData
+  // Sincronização forçada: atualiza posRef e targetPos assim que profileData carregar
   useEffect(() => {
     if (profileData && profileData.pos_x != null && profileData.pos_y != null) {
-      posRef.current.x = Number(profileData.pos_x);
-      posRef.current.y = Number(profileData.pos_y);
-      setPos({ ...posRef.current });
-      setTargetPos({ ...posRef.current });
+      const dbX = Number(profileData.pos_x);
+      const dbY = Number(profileData.pos_y);
+      posRef.current.x = dbX;
+      posRef.current.y = dbY;
+      setPos({ x: dbX, y: dbY });
+      setTargetPos({ x: dbX, y: dbY });
     }
-    // Só executa na primeira carga válida
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.pos_x, profileData?.pos_y]);
 
@@ -50,6 +51,8 @@ const EntityLayer = React.memo(({ target, onMove }) => {
   }, [target]);
 
   useTick(() => {
+    // Bloqueia movimento até targetPos ser diferente da posição inicial
+    if (targetPos.x === posRef.current.x && targetPos.y === posRef.current.y) return;
     const dx = targetPos.x - posRef.current.x;
     const dy = targetPos.y - posRef.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
