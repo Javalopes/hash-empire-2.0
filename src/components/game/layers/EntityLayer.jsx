@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext';
-import useGameSync from '../../../hooks/useGameSync';
+import { useGameSync } from '../../../hooks/useGameSync.js';
 
 const COLOR = 0x22d3ee;
 const GLOW_COLOR = 0x22d3ee;
@@ -72,3 +72,4 @@ const EntityLayer = React.memo(() => {
 });
 
 export default EntityLayer;
+
