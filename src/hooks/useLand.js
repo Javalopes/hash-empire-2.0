@@ -21,6 +21,7 @@ export default function useLand(pos) {
   const lastCoords = useRef({ cx: null, cy: null });
 
   useEffect(() => {
+    console.log('🗺️ [LAND] Calculando posição:', pos);
     if (!pos) return;
     const lote = getLoteInfo(pos.x, pos.y);
     if (!lote) {
@@ -33,12 +34,14 @@ export default function useLand(pos) {
     if (lastCoords.current.cx === cx && lastCoords.current.cy === cy) return;
     lastCoords.current = { cx, cy };
     setLoading(true);
+    console.log('📡 [DB-QUERY] Procurando Lote:', cx, cy);
     supabase
       .from('land_registry')
       .select('*')
       .match({ coord_x: cx, coord_y: cy })
       .maybeSingle()
       .then(({ data, error }) => {
+        console.log('✅ [DB-RESULT]:', data || 'Lote vazio');
         if (!data) {
           setCurrentLote({ coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
         } else {

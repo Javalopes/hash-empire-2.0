@@ -17,6 +17,7 @@ export default function GameStage() {
     x: profileData?.pos_x || 500, 
     y: profileData?.pos_y || 500 
   });
+  const [playerPos, setPlayerPos] = useState(null);
 
   // camPos será passado para useLand
   
@@ -53,7 +54,7 @@ export default function GameStage() {
             <EntityLayer 
               target={targetPos} 
               onMove={enviarPosicao} 
-              onPositionUpdate={(x, y) => setCamPos({ x, y })}
+              onPositionUpdate={(x, y) => { setCamPos({ x, y }); setPlayerPos({ x, y }); }}
             />
           </Container>
         </Stage>
