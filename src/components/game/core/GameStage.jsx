@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../lib/AuthContext.jsx';
 import { Stage, Container } from '@pixi/react';
 import useGameSync from '../../../hooks/useGameSync.js';
 import BackgroundLayer from '../layers/BackgroundLayer.jsx';
