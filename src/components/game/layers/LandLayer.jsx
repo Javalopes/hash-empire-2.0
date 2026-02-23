@@ -2,188 +2,135 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { Container, Graphics, Text } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 import { supabase } from '../../../lib/supabase';
+import * as PIXI from 'pixi.js';
 
 const LOTE_SIZE = 256;
 const ROAD_SIZE = 64;
 const MAP_SIZE = 5000;
-const BASE_COLOR = 0x1e293b;
-const BASE_ALPHA = 0.4;
-const HIGHLIGHT_COLOR = 0x22d3ee;
-const HIGHLIGHT_ALPHA = 0.9;
-const ROAD_COLOR = 0x0f172a;
-const ROAD_ALPHA = 1;
-const RADIUS = 2000;
-
-function getLotCoords(x, y) {
-  // Calcula a posição relativa ao grid urbanístico
-  const gridStep = LOTE_SIZE + ROAD_SIZE;
-  return {
-    lotX: Math.floor(x / gridStep),
-    lotY: Math.floor(y / gridStep)
-  };
-}
-
-function isInsideLot(x, y, px, py) {
-  // Verifica se (x,y) está dentro do lote (não na estrada)
-  return (
-    x >= px && x < px + LOTE_SIZE &&
-    y >= py && y < py + LOTE_SIZE
-  );
-}
+const GRID_STEP = LOTE_SIZE + ROAD_SIZE;
+const RADIUS = 1500; 
 
 const LandLayer = ({ playerPos }) => {
-    const { user } = useAuth();
-    const [ownedLots, setOwnedLots] = useState([]);
-    const [allLotes, setAllLotes] = useState([]);
+  const { user } = useAuth(); 
+  const [allLotes, setAllLotes] = useState([]);
 
-    useEffect(() => {
-      // Carrega todos os lotes ocupados uma vez
-      supabase
-        .from('land_registry')
-        .select('*')
-        .then(({ data }) => {
-          setOwnedLots(data || []);
-        });
-      // Carrega todos os lotes para visibilidade global
-      supabase
-        .from('land_registry')
-        .select('*')
-        .then(({ data }) => {
-          setAllLotes(data || []);
-        });
-    }, []);
-  // Calcula o lote atual do jogador
-  const gridStep = LOTE_SIZE + ROAD_SIZE;
-  const { lotX: playerLotX, lotY: playerLotY } = getLotCoords(playerPos.x, playerPos.y);
+  useEffect(() => {
+    const carregarLotes = async () => {
+      const { data } = await supabase.from('land_registry').select('*');
+      if (data) {
+        setAllLotes(data);
+        console.log("🏙️ [MAPA] Lotes carregados da DB:", data.length);
+      }
+    };
+    carregarLotes();
+    
+    const channel = supabase.channel('land-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'land_registry' }, carregarLotes)
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
-  // Calcula os lotes visíveis num raio de 2000px
-  const minX = Math.max(0, playerPos.x - RADIUS);
-  const maxX = Math.min(MAP_SIZE, playerPos.x + RADIUS);
-  const minY = Math.max(0, playerPos.y - RADIUS);
-  const maxY = Math.min(MAP_SIZE, playerPos.y + RADIUS);
+  // Extração limpa da Wallet
+  const myWallet = useMemo(() => {
+    const raw = typeof user === 'string' ? user : user?.id || '';
+    return raw.toString().trim(); 
+  }, [user]);
 
-  const lots = useMemo(() => {
+  const visibleLots = useMemo(() => {
     const arr = [];
-    for (let x = Math.floor(minX / gridStep); x <= Math.floor(maxX / gridStep); x++) {
-      for (let y = Math.floor(minY / gridStep); y <= Math.floor(maxY / gridStep); y++) {
+    const startX = Math.max(0, Math.floor((playerPos.x - RADIUS) / GRID_STEP));
+    const endX = Math.min(Math.floor(MAP_SIZE / GRID_STEP), Math.ceil((playerPos.x + RADIUS) / GRID_STEP));
+    const startY = Math.max(0, Math.floor((playerPos.y - RADIUS) / GRID_STEP));
+    const endY = Math.min(MAP_SIZE / GRID_STEP, Math.ceil((playerPos.y + RADIUS) / GRID_STEP));
+
+    for (let x = startX; x <= endX; x++) {
+      for (let y = startY; y <= endY; y++) {
         arr.push({ x, y });
       }
     }
     return arr;
-  }, [minX, maxX, minY, maxY, gridStep]);
+  }, [playerPos.x, playerPos.y]);
 
   return (
     <Container>
-      {/* Desenha as estradas (espaço entre lotes) */}
-      {lots.map(({ x, y }) => {
-        const px = x * gridStep;
-        const py = y * gridStep;
-        // Estrada horizontal
-        if (py + LOTE_SIZE < MAP_SIZE) {
-          <Graphics
-            key={`road-h-${x}-${y}`}
-            draw={g => {
-              g.clear();
-              g.beginFill(ROAD_COLOR, ROAD_ALPHA);
-              g.drawRect(px, py + LOTE_SIZE, LOTE_SIZE, ROAD_SIZE);
-              g.endFill();
-            }}
-          />
-        }
-        // Estrada vertical
-        if (px + LOTE_SIZE < MAP_SIZE) {
-          <Graphics
-            key={`road-v-${x}-${y}`}
-            draw={g => {
-              g.clear();
-              g.beginFill(ROAD_COLOR, ROAD_ALPHA);
-              g.drawRect(px + LOTE_SIZE, py, ROAD_SIZE, LOTE_SIZE);
-              g.endFill();
-            }}
-          />
-        }
-        return null;
-      })}
-      {/* Desenha os lotes com cores de dono */}
-      {lots.map(({ x, y }) => {
-        const px = x * gridStep;
-        const py = y * gridStep;
-        // Verifica se o mineiro está dentro do lote
-        const isPlayerLot = isInsideLot(playerPos.x, playerPos.y, px, py);
-        // Busca dono do lote
-        const lote = allLotes.find(l => l.coord_x === x && l.coord_y === y);
-        let fillColor = null;
-        let borderColor = BASE_COLOR;
-        let borderAlpha = BASE_ALPHA;
-        // Verificação correta de dono (ignora maiúsculas/minúsculas)
-        const isMine = lote && String(lote.owner_id).toLowerCase() === String(user?.id || user).toLowerCase();
-        if (lote && lote.owner_id) {
-          if (isMine) {
-            // Meu lote
-            fillColor = HIGHLIGHT_COLOR;
-            borderColor = 0xffd700; // Dourado
-            borderAlpha = 1;
-          } else {
-            // Lote de outro
-            borderColor = 0xf87171; // Vermelho suave
-            borderAlpha = 1;
-          }
-        } else if (isPlayerLot) {
-          borderColor = HIGHLIGHT_COLOR;
-          borderAlpha = HIGHLIGHT_ALPHA;
-        }
-        // Portais: 4 lados
-        // Portais: 4 lados, desenhados no centro de cada parede
-        // Portas: 4 retângulos no meio das bordas
-        const portals = [
-          { side: 'N', x: px + (LOTE_SIZE / 2) - 16, y: py - 4, w: 32, h: 8 }, // Topo
-          { side: 'S', x: px + (LOTE_SIZE / 2) - 16, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
-          { side: 'E', x: px + LOTE_SIZE - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Direita
-          { side: 'W', x: px - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Esquerda
-        ];
+      {visibleLots.map(({ x, y }) => {
+        const px = x * GRID_STEP;
+        const py = y * GRID_STEP;
+        
+        const isPlayerInside = playerPos.x >= px && playerPos.x < px + LOTE_SIZE && 
+                               playerPos.y >= py && playerPos.y < py + LOTE_SIZE;
 
-        // Mineiro colide com portal?
-        const portalCollisions = portals.map(portal => {
-          const pxMid = portal.x + portal.w / 2;
-          const pyMid = portal.y + portal.h / 2;
-          const dist = Math.sqrt((playerPos.x - pxMid) ** 2 + (playerPos.y - pyMid) ** 2);
-          return dist < 24; // Colisão se mineiro está a menos de 24px do centro da porta
-        });
+        const dbLote = allLotes.find(l => l.coord_x === x && l.coord_y === y);
+        const ownerWallet = dbLote?.owner_id ? String(dbLote.owner_id).trim() : '';
+        const isMine = ownerWallet !== '' && ownerWallet === myWallet;
+
+        // --- LOGS DE DEBUG ---
+        // Só faz log se houver um dono e o jogador estiver dentro ou perto do lote
+        if (dbLote?.owner_id && isPlayerInside) {
+          console.log(`🧐 [CONFRONTO LOTE ${x},${y}]`);
+          console.log(`   > Wallet DB: "${ownerWallet}" (Length: ${ownerWallet.length})`);
+          console.log(`   > Wallet TU: "${myWallet}" (Length: ${myWallet.length})`);
+          console.log(`   > Match: ${isMine ? "✅ SIM" : "❌ NÃO"}`);
+        }
+
+        let borderColor = 0x1e293b;
+        let borderAlpha = 0.4;
+        let fillColor = null;
+
+        if (isMine) {
+          borderColor = 0xffd700; // DOURADO
+          borderAlpha = 1;
+          fillColor = 0x22d3ee;
+        } else if (dbLote?.owner_id) {
+          borderColor = 0xf87171; // VERMELHO
+          borderAlpha = 1;
+        } else if (isPlayerInside) {
+          borderColor = 0x22d3ee; // CIANO
+          borderAlpha = 0.9;
+        }
 
         return (
-          <React.Fragment key={`lot-${x}-${y}`}>
-            <Graphics
-              draw={g => {
-                g.clear();
-                // Lote
-                if (fillColor && isMine) {
-                  g.beginFill(fillColor, 0.2);
-                  g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
-                  g.endFill();
-                }
-                g.lineStyle(2, borderColor, borderAlpha);
+          <Container key={`lote-${x}-${y}`}>
+            <Graphics draw={g => {
+              g.clear();
+              // Estradas
+              g.beginFill(0x0f172a, 1);
+              g.drawRect(px + LOTE_SIZE, py, ROAD_SIZE, LOTE_SIZE + ROAD_SIZE);
+              g.drawRect(px, py + LOTE_SIZE, LOTE_SIZE + ROAD_SIZE, ROAD_SIZE);
+              g.endFill();
+
+              // Lote
+              if (isMine) {
+                g.beginFill(fillColor, 0.15);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
-                // Portas (após o lote)
-                portals.forEach((portal) => {
-                  let color = 0x475569;
-                  let alpha = 0.7;
-                  if (isMine) {
-                    color = 0x22d3ee;
-                    alpha = 0.9;
-                  }
-                  g.beginFill(color, alpha);
-                  g.drawRect(portal.x, portal.y, portal.w, portal.h);
-                  g.endFill();
-                });
-              }}
-            />
+                g.endFill();
+              }
+              
+              g.lineStyle(2, borderColor, borderAlpha);
+              g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
+
+              // Portas
+              const portalColor = isMine ? 0x22d3ee : 0x475569;
+              g.beginFill(portalColor, 1);
+              g.drawRect(px + 112, py - 4, 32, 8);
+              g.drawRect(px + 112, py + 252, 32, 8);
+              g.drawRect(px + 252, py + 112, 8, 32);
+              g.drawRect(px - 4, py + 112, 8, 32);
+              g.endFill();
+            }} />
+
             <Text
               text={`LOTE ${x},${y}`}
-              x={px + 6}
-              y={py + 6}
-              style={{ fontSize: 18, fill: borderColor, alpha: borderAlpha, fontWeight: 'bold' }}
+              x={px + 10} y={py + 10}
+              style={new PIXI.TextStyle({ 
+                fontSize: 14, 
+                fill: borderColor, 
+                fontWeight: 'bold',
+                fontFamily: 'monospace'
+              })}
             />
-          </React.Fragment>
+          </Container>
         );
       })}
     </Container>

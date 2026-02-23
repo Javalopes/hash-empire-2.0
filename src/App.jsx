@@ -1,31 +1,28 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import GameStage from './components/game/core/GameStage.jsx';
-import useLand from './hooks/useLand.js';
 
 function GameContent() {
   const { user, loading, connectWallet, disconnectWallet, profileData, hasPhantom } = useAuth();
   const [started, setStarted] = useState(false);
-  // Pega posição do mineiro
-  // Recebe posição em tempo real do GameStage
-  const [livePos, setLivePos] = useState(null);
 
+  // 1. TRAVA DE CARREGAMENTO: Garante que o sistema está estável
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center font-mono text-cyan-400 animate-pulse tracking-[0.5em]">
       SINCRO_SISTEMA_V2...
     </div>
   );
 
-  if (started && user) return <GameStage />;
-  if (started && user) return (
-    <GameStage />
-  );
+  // 2. INICIAR JOGO: Passamos o USER explicitamente se necessário
+  // Removi a duplicata que tinhas aqui
+  if (started && user) {
+    return <GameStage />;
+  }
 
   return (
     <div className="min-h-screen bg-[#020617] relative flex flex-col items-center justify-center p-6 font-mono overflow-hidden">
-      {/* CAMADA DE FUNDO: Grelha Ciberpunk */}
+      {/* CAMADAS DE FUNDO */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(6,182,212,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.1)_1px,transparent_1px)] bg-[size:45px_45px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
-      {/* CAMADA DE FUNDO: Scanlines (Efeito de Monitor) */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,3px_100%]" />
 
       {!user ? (
@@ -49,18 +46,18 @@ function GameContent() {
                 {hasPhantom ? 'Conectar Phantom' : 'Instalar Phantom'}
               </span>
               <div className={`absolute inset-0 ${hasPhantom ? 'bg-cyan-400' : 'bg-amber-500'} transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 -z-0`} />
-              <style dangerouslySetInnerHTML={{__html: '.group:hover span { color: black; }'}} />
             </button>
             <p className="text-cyan-900 text-[9px] uppercase tracking-[0.5em] animate-pulse">Link Neural Disponível</p>
           </div>
         </div>
       ) : (
-        /* PAINEL DE CONTROLO DO JOGADOR */
+        /* PAINEL DE CONTROLO */
         <div className="w-full max-w-md bg-black/80 border-2 border-cyan-500/40 p-10 backdrop-blur-2xl shadow-[0_0_100px_rgba(0,0,0,1)] rounded-sm relative animate-in zoom-in-95 duration-500 z-10">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_rgba(6,182,212,1)]" />
           <div className="flex justify-between items-start mb-10">
             <div className="border-l-4 border-cyan-400 pl-5">
               <h2 className="text-cyan-500 text-[10px] font-bold uppercase tracking-[0.3em] mb-1">ID_AUTORIZADO</h2>
+              {/* Mostra a Wallet real para confirmar que o State existe */}
               <p className="text-white font-mono text-xs truncate w-40 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]">{user}</p>
             </div>
             <button 
@@ -70,6 +67,7 @@ function GameContent() {
               Desconectar
             </button>
           </div>
+
           <div className="grid grid-cols-2 gap-6 mb-10">
             <div className="bg-cyan-950/20 p-6 border border-cyan-500/10">
               <p className="text-cyan-800 text-[9px] uppercase font-black mb-2 tracking-widest">Saldo_HASH</p>
@@ -82,16 +80,20 @@ function GameContent() {
               <p className="text-white text-3xl font-bold">{profileData?.xp || 0}</p>
             </div>
           </div>
+
           <button
-            className="w-full py-6 bg-cyan-500 text-black font-black uppercase tracking-[0.6em] text-lg hover:bg-white hover:shadow-[0_0_40px_rgba(255,255,255,0.8)] transition-all duration-300 shadow-2xl relative overflow-hidden group"
-            onClick={() => setStarted(true)}
+            className="w-full py-6 bg-cyan-500 text-black font-black uppercase tracking-[0.6em] text-lg hover:bg-white transition-all duration-300 shadow-2xl relative overflow-hidden group"
+            onClick={() => {
+              console.log("🚀 [INICIAR] Iniciando com user:", user);
+              setStarted(true);
+            }}
           >
             <span className="relative z-10">Iniciar Incursão</span>
             <div className="absolute inset-0 bg-white/30 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12" />
           </button>
         </div>
       )}
-      {/* FOOTER DECORATIVO */}
+
       <div className="fixed bottom-6 text-[9px] text-cyan-950 font-mono uppercase tracking-[1em] animate-pulse z-10">
         Terminal_v2.1.8 // Stable_Build
       </div>
