@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Graphics } from '@pixi/react';
 
 const GRID_SIZE = 64;
-const AREA_SIZE = 5000;
+const AREA_SIZE = 5000; // MAP_SIZE
 const LINE_COLOR = 0x06b6d4;
 const LINE_ALPHA = 0.1;
 

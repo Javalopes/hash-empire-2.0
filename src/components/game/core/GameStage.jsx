@@ -7,6 +7,7 @@ import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
+    const MAP_SIZE = 5000;
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
   
@@ -18,31 +19,40 @@ export default function GameStage() {
   
   const [targetPos, setTargetPos] = useState(null);
 
-  const handleStageClick = (e) => {
+    const handleStageClick = (e) => {
     // IMPORTANTE: Coordenada do clique + Deslocamento da Câmara
-    const worldX = e.nativeEvent.offsetX + (camPos.x - window.innerWidth / 2);
-    const worldY = e.nativeEvent.offsetY + (camPos.y - window.innerHeight / 2);
-    
-    setTargetPos({ x: worldX, y: worldY });
-  };
+    let worldX = e.nativeEvent.offsetX + (camPos.x - window.innerWidth / 2);
+    let worldY = e.nativeEvent.offsetY + (camPos.y - window.innerHeight / 2);
 
-  return (
-    <div onPointerDown={handleStageClick} className="w-full h-screen bg-[#020617]">
-      <Stage 
-        width={window.innerWidth} 
-        height={window.innerHeight} 
-        options={{ backgroundColor: 0x020617, antialias: true, eventMode: 'static' }}
-      >
-        <Container x={(window.innerWidth / 2) - camPos.x} y={(window.innerHeight / 2) - camPos.y}>
-          <BackgroundLayer />
-          <MultiplayerLayer players={otherPlayers} myId={user} />
-          <EntityLayer 
-            target={targetPos} 
-            onMove={enviarPosicao} 
-            onPositionUpdate={(x, y) => setCamPos({ x, y })}
-          />
-        </Container>
-      </Stage>
-    </div>
-  );
+    // Clamp para os limites do mundo
+    worldX = Math.max(0, Math.min(MAP_SIZE, worldX));
+    worldY = Math.max(0, Math.min(MAP_SIZE, worldY));
+
+    setTargetPos({ x: worldX, y: worldY });
+    };
+
+    return (
+      <div className="w-full h-screen bg-[#020617]">
+        <Stage 
+          width={window.innerWidth} 
+          height={window.innerHeight} 
+          options={{ 
+            backgroundColor: 0x020617, 
+            antialias: true, 
+            eventMode: 'static' // <--- AQUI DENTRO DAS OPTIONS
+          }}
+          onPointerDown={handleStageClick}
+        >
+          <Container x={(window.innerWidth / 2) - camPos.x} y={(window.innerHeight / 2) - camPos.y}>
+            <BackgroundLayer />
+            <MultiplayerLayer players={otherPlayers} myId={user} />
+            <EntityLayer 
+              target={targetPos} 
+              onMove={enviarPosicao} 
+              onPositionUpdate={(x, y) => setCamPos({ x, y })}
+            />
+          </Container>
+        </Stage>
+      </div>
+    );
 }
