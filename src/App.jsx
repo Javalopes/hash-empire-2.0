@@ -7,8 +7,9 @@ function GameContent() {
   const { user, loading, connectWallet, disconnectWallet, profileData, hasPhantom } = useAuth();
   const [started, setStarted] = useState(false);
   // Pega posição do mineiro
-  const mineiroPos = profileData ? { x: Number(profileData.pos_x), y: Number(profileData.pos_y) } : null;
-  const { currentLote, loading: loteLoading } = useLand(mineiroPos);
+  // Recebe posição em tempo real do GameStage
+  const [livePos, setLivePos] = useState(null);
+  const { currentLote, loading: loteLoading } = useLand(livePos);
 
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center font-mono text-cyan-400 animate-pulse tracking-[0.5em]">
