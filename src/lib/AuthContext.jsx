@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from './supabase';
+import { supabase } from './supabase.js';
 
 const AuthContext = createContext({});
 
@@ -14,7 +14,6 @@ export const AuthProvider = ({ children }) => {
       const solana = window?.solana;
       if (solana?.isPhantom) {
         setHasPhantom(true);
-        // Tenta reconectar se já for confiável
         solana.connect({ onlyIfTrusted: true })
           .then(({ publicKey }) => {
             const address = publicKey.toString();
@@ -28,7 +27,6 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Pequeno delay para garantir injeção da extensão
     const timer = setTimeout(checkPhantom, 500);
     return () => clearTimeout(timer);
   }, []);
@@ -50,27 +48,49 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfileData(data);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error("Erro ao buscar perfil:", e);
+    }
   };
 
   const connectWallet = async () => {
     try {
-      if (!window?.solana?.isPhantom) return window.open("https://phantom.app", "_blank");
+      if (!window?.solana?.isPhantom) {
+        window.open("https://phantom.app", "_blank");
+        return;
+      }
       const { publicKey } = await window.solana.connect();
       const address = publicKey.toString();
       setUser(address);
       await fetchProfile(address);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Conexão rejeitada:", err);
+    }
   };
 
-  const disconnectWallet = () => {
-    if (window?.solana) window.solana.disconnect();
-    setUser(null);
-    setProfileData(null);
+  const disconnectWallet = async () => {
+    try {
+      if (window?.solana) {
+        await window.solana.disconnect();
+      }
+      setUser(null);
+      setProfileData(null);
+      console.log("🔌 Wallet desconectada.");
+    } catch (err) {
+      console.error("Erro ao desconectar:", err);
+    }
   };
 
+  // FIX: Adicionado disconnectWallet ao value para não dar erro "not a function"
   return (
-    <AuthContext.Provider value={{ user, profileData, loading, hasPhantom, connectWallet, disconnectWallet }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      profileData, 
+      loading, 
+      hasPhantom, 
+      connectWallet, 
+      disconnectWallet 
+    }}>
       {children}
     </AuthContext.Provider>
   );
