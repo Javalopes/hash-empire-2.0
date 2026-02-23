@@ -1,37 +1,22 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { Stage, Container } from '@pixi/react';
+import { useAuth } from '../../../lib/AuthContext.jsx';
+import { useGameSync } from '../../../hooks/useGameSync.js';
 import BackgroundLayer from '../layers/BackgroundLayer.jsx';
-import EntityLayer from '../layers/EntityLayer.jsx';
 import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
-import useGameSync from '../../../hooks/useGameSync';
-
-const width = window.innerWidth;
-const height = window.innerHeight;
+import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
-  const { otherPlayers } = useGameSync();
-
-  const handleClick = useCallback((event) => {
-    // Coordenadas do clique
-    const rect = event.target.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    // Atualiza posição do mineiro
-    if (EntityLayer.setTarget) EntityLayer.setTarget({ x, y });
-  }, []);
+  const { user } = useAuth();
+  // ISTO É O QUE FALTA: Chamar o hook para ele ativar o subscribe!
+  const { otherPlayers, enviarPosicao } = useGameSync(user);
 
   return (
-    <Stage
-      width={width}
-      height={height}
-      options={{ antialias: true, backgroundColor: 0x020617 }}
-      style={{ width: '100vw', height: '100vh', display: 'block' }}
-      onClick={handleClick}
-    >
+    <Stage width={window.innerWidth} height={window.innerHeight} options={{ backgroundColor: 0x020617 }}>
       <Container>
         <BackgroundLayer />
         <MultiplayerLayer players={otherPlayers} />
-        <EntityLayer />
+        <EntityLayer onMove={enviarPosicao} />
       </Container>
     </Stage>
   );
