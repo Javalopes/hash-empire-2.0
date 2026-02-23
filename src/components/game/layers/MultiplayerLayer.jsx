@@ -20,18 +20,20 @@ function drawPlayer(x, y) {
   };
 }
 
-const MultiplayerLayer = ({ players }) => {
-  return Object.entries(players || {}).map(([id, data]) => (
-    <React.Fragment key={id}>
-      <Graphics draw={drawPlayer(data.x, data.y)} />
-      <Text
-        text={id}
-        x={data.x - 40}
-        y={data.y - RADIUS - 18}
-        style={{ fill: '#ff00ff', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' }}
-      />
-    </React.Fragment>
-  ));
+const MultiplayerLayer = ({ players, user }) => {
+  return Object.entries(players || {})
+    .filter(([id]) => id !== user)
+    .map(([id, data]) => (
+      <React.Fragment key={id}>
+        <Graphics draw={drawPlayer(data.x, data.y)} />
+        <Text
+          text={id}
+          x={data.x - 40}
+          y={data.y - RADIUS - 18}
+          style={{ fill: '#ff00ff', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' }}
+        />
+      </React.Fragment>
+    ));
 };
 
 export default React.memo(MultiplayerLayer);
