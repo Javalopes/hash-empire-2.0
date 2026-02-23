@@ -1,33 +1,23 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 
-export default function EntityLayer({ target, onMove, onPositionUpdate, currentLote, user, onEnterEdificio }) {
-    const MAP_SIZE = 5000;
-    const { profileData } = useAuth();
+export default function EntityLayer({ target, onMove, onPositionUpdate }) {
+  const MAP_SIZE = 5000;
+  const { profileData } = useAuth();
 
-    // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
-    const pos = useRef({
-      import React, { useRef, useEffect } from 'react';
-      import { Graphics, useTick } from '@pixi/react';
-      import { useAuth } from '../../../lib/AuthContext.jsx';
+  // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
+  const pos = useRef({
+    x: Number(profileData?.pos_x ?? 500),
+    y: Number(profileData?.pos_y ?? 500)
+  });
+  const lastSentPos = useRef({ x: pos.current.x, y: pos.current.y });
+  const hasSpawned = useRef(false);
+  const targetRef = useRef(target);
 
-      export default function EntityLayer({ target, onMove, onPositionUpdate }) {
-        const MAP_SIZE = 5000;
-        const { profileData } = useAuth();
-
-        // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
-        const pos = useRef({
-          x: Number(profileData?.pos_x ?? 500),
-          y: Number(profileData?.pos_y ?? 500)
-        });
-        const lastSentPos = useRef({ x: pos.current.x, y: pos.current.y });
-        const hasSpawned = useRef(false);
-        const targetRef = useRef(target);
-
-        // Atualiza targetRef sempre que a prop target mudar
-        useEffect(() => {
-          targetRef.current = target;
+  // Atualiza targetRef sempre que a prop target mudar
+  useEffect(() => {
+    targetRef.current = target;
         }, [target]);
 
         // 2. SPAWN IMEDIATO: No login, teleporta logo sem deslize
