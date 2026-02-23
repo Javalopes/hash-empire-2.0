@@ -1,7 +1,5 @@
 import React from 'react';
 import { Graphics, Text } from '@pixi/react';
-import { useAuth } from '../../../lib/AuthContext';
-import useGameSync from '../../../hooks/useGameSync';
 
 const PLAYER_COLOR = 0xff00ff;
 const RADIUS = 20;
@@ -22,15 +20,12 @@ function drawPlayer(x, y) {
   };
 }
 
-const MultiplayerLayer = () => {
-  const { user, profileData } = useAuth();
-  const otherPlayers = useGameSync(user, { x: profileData?.pos_x || 500, y: profileData?.pos_y || 500 });
-
-  return Object.entries(otherPlayers).map(([id, pos]) => (
-    <React.Fragment key={id}>
+const MultiplayerLayer = ({ otherPlayers }) => {
+  return Object.values(otherPlayers || {}).map((pos, idx) => (
+    <React.Fragment key={idx}>
       <Graphics draw={drawPlayer(pos.x, pos.y)} />
       <Text
-        text={id}
+        text={pos.id || ''}
         x={pos.x - 40}
         y={pos.y - RADIUS - 18}
         style={{ fill: '#ff00ff', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' }}
