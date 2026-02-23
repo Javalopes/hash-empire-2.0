@@ -1,4 +1,4 @@
-jsx
+
 import React, { useState } from 'react';
 import { useAuth } from './lib/AuthContext';
 
@@ -109,3 +109,4 @@ export default function App() {
     </div>
   );
 }
+
