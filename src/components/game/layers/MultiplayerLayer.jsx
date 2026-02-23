@@ -20,14 +20,14 @@ function drawPlayer(x, y) {
   };
 }
 
-const MultiplayerLayer = ({ otherPlayers }) => {
-  return Object.values(otherPlayers || {}).map((pos, idx) => (
-    <React.Fragment key={idx}>
-      <Graphics draw={drawPlayer(pos.x, pos.y)} />
+const MultiplayerLayer = ({ players }) => {
+  return Object.entries(players || {}).map(([id, data]) => (
+    <React.Fragment key={id}>
+      <Graphics draw={drawPlayer(data.x, data.y)} />
       <Text
-        text={pos.id || ''}
-        x={pos.x - 40}
-        y={pos.y - RADIUS - 18}
+        text={id}
+        x={data.x - 40}
+        y={data.y - RADIUS - 18}
         style={{ fill: '#ff00ff', fontSize: 18, fontWeight: 'bold', fontFamily: 'monospace' }}
       />
     </React.Fragment>
