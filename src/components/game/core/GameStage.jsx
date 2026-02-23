@@ -3,6 +3,7 @@ import { Stage, Container } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 import useGameSync from '../../../hooks/useGameSync.js';
 import BackgroundLayer from '../layers/BackgroundLayer.jsx';
+import LandLayer from '../layers/LandLayer.jsx';
 import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
@@ -44,6 +45,7 @@ export default function GameStage() {
           onPointerDown={handleStageClick}
         >
           <Container x={(window.innerWidth / 2) - camPos.x} y={(window.innerHeight / 2) - camPos.y}>
+            <LandLayer playerPos={camPos} />
             <BackgroundLayer />
             <MultiplayerLayer players={otherPlayers} myId={user} />
             <EntityLayer 
