@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
 
-const useGameSync = (userAddress) => {
+export const useGameSync = (userAddress) => {
   const [otherPlayers, setOtherPlayers] = useState({});
+  const lastUpdate = useRef(0);
+  const canalRef = useRef(null); // Usamos REF para o canal não ser recriado
 
   useEffect(() => {
     if (!userAddress) return;
 
+    // Criar o canal uma única vez
     const channel = supabase.channel('mapa_geral', {
       config: { broadcast: { self: false } }
     });
@@ -14,49 +17,42 @@ const useGameSync = (userAddress) => {
     channel
       .on('broadcast', { event: 'movimento' }, (payload) => {
         const { id, x, y } = payload.payload;
-        // Não adiciona o próprio jogador ao mapa de outros
-        if (id && id !== userAddress) {
-          setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
-        }
+        if (id) setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    canalRef.current = channel;
+
+    return () => {
+      if (canalRef.current) supabase.removeChannel(canalRef.current);
+    };
   }, [userAddress]);
 
-  // Throttle control com useRef para garantir 1 chamada por segundo
-  const lastDbUpdateRef = useRef(0);
-  const lastRollbackRef = useRef(null);
-  const enviarPosicao = async (x, y, rollback) => {
-    if (!userAddress) return;
-    // Tipos corretos para RPC
-    const rpcPayload = {
-      p_id: String(userAddress),
-      p_new_x: Number(x),
-      p_new_y: Number(y),
-    };
-    // Broadcast rápido para multiplayer
-    supabase.channel('mapa_geral').send({
+  const enviarPosicao = async (x, y) => {
+    if (!userAddress || !canalRef.current) return;
+
+    // 1. Broadcast Rápido
+    canalRef.current.send({
       type: 'broadcast',
       event: 'movimento',
-      payload: { id: userAddress, x: Number(x), y: Number(y) },
+      payload: { id: userAddress, x, y },
     });
-    // Throttle: só grava no Supabase a cada 1 segundo
-    const now = Date.now();
-    if (now - lastDbUpdateRef.current > 1000) {
-      lastDbUpdateRef.current = now;
-      lastRollbackRef.current = rollback;
-      console.log('📡 [RPC] Enviando para DB:', rpcPayload);
-      const { data, error } = await supabase.rpc('mover_mineiro', rpcPayload);
-      if (error) {
-        // Rollback: volta à posição anterior se falhar
-        if (typeof lastRollbackRef.current === 'function') lastRollbackRef.current();
-        return;
-      }
+
+    // 2. RPC para a DB (Controlado)
+    const agora = Date.now();
+    if (agora - lastUpdate.current > 1000) {
+      lastUpdate.current = agora;
+      
+      // Enviamos os NOMES EXATOS que o SQL espera
+      const { error } = await supabase.rpc('mover_mineiro', {
+        p_id: String(userAddress),
+        p_new_x: Number(x),
+        p_new_y: Number(y)
+      });
+
+      if (error) console.error("❌ [SUPABASE ERROR]:", error.message);
     }
   };
 
   return { otherPlayers, enviarPosicao };
 };
-
-export default useGameSync; // <--- AGORA É DEFAULT EXPORT
