@@ -9,7 +9,7 @@ function GameContent() {
   // Pega posição do mineiro
   // Recebe posição em tempo real do GameStage
   const [livePos, setLivePos] = useState(null);
-  const { currentLote, loading: loteLoading } = useLand(livePos);
+  const { currentLote, loading: loteLoading, buying, reivindicar } = useLand(livePos);
 
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center font-mono text-cyan-400 animate-pulse tracking-[0.5em]">
@@ -31,8 +31,14 @@ function GameContent() {
             <div className="text-white text-sm mb-1">STATUS: <span className="text-cyan-300">{currentLote.status}</span></div>
             <div className="text-white text-sm mb-1">PREÇO: <span className="text-cyan-300">{currentLote.price} HASH</span></div>
             <div className="text-white text-sm mb-3">DONO: <span className="text-cyan-300">{currentLote.owner || '---'}</span></div>
-            {currentLote.status === 'disponivel' && (
-              <button className="bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition">REIVINDICAR LOTE</button>
+            {!currentLote.id && currentLote.status === 'disponivel' && (
+              <button
+                className={`bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition ${buying ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={buying}
+                onClick={() => reivindicar(currentLote.coord_x, currentLote.coord_y, user)}
+              >
+                {buying ? 'A REIVINDICAR...' : 'REIVINDICAR AGORA'}
+              </button>
             )}
           </>
         ) : (

@@ -6,7 +6,28 @@ const GRID_STEP = 256 + 64;
 export default function useLand(playerPos) {
   const [currentLote, setCurrentLote] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [buying, setBuying] = useState(false);
   const lastCoords = useRef({ cx: null, cy: null });
+
+  // Função para reivindicar lote
+  async function reivindicar(cx, cy, wallet) {
+    setBuying(true);
+    const { data, error } = await supabase.rpc('reivindicar_lote', {
+      p_wallet: wallet,
+      p_cx: cx,
+      p_cy: cy
+    });
+    setBuying(false);
+    // Refresh do lote
+    setLoading(true);
+    const { data: loteData } = await supabase
+      .from('land_registry')
+      .select('*')
+      .match({ coord_x: cx, coord_y: cy })
+      .maybeSingle();
+    setCurrentLote(loteData || { coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
+    setLoading(false);
+  }
 
   useEffect(() => {
     if (!playerPos) return;
@@ -32,5 +53,5 @@ export default function useLand(playerPos) {
       });
   }, [playerPos]);
 
-  return { currentLote, loading };
+  return { currentLote, loading, buying, reivindicar };
 }
