@@ -14,31 +14,27 @@ export default function useGameSync(userId, pos) {
     lastSentRef.current = now;
     channelRef.current.send({
       type: 'broadcast',
-      event: 'posicao_jogador',
+      event: 'movimento',
       payload: { id: userId, x, y },
     });
   }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
-    // Subscrição com config para não receber os próprios broadcasts
+    // Cria canal com config
     const channel = supabase.channel('mapa_geral', {
       broadcast: { self: false }
     });
     channelRef.current = channel;
 
-    // Escuta de dados
-    channel.on('broadcast', { event: 'posicao_jogador' }, payload => {
+    channel.on('broadcast', { event: 'movimento' }, payload => {
       const { id, x, y } = payload;
-      if (id === userId) return; // Ignora o próprio
-      console.log('📡 [MULTIPLAYER] Recebi movimento de:', id);
+      if (id === userId) return;
       setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
     });
 
     channel.subscribe(status => {
-      if (status === 'SUBSCRIBED') {
-        console.log('📡 [REALTIME] Canal subscrito com sucesso');
-      }
+      console.log('📡 [REALTIME] Status:', status);
     });
 
     return () => {
