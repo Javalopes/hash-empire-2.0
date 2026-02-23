@@ -9,16 +9,16 @@ const useGameSync = (userAddress) => {
   useEffect(() => {
     if (!userAddress) return;
 
-    // Criar canal único
+    // 1. Inicializar Canal Único
     const channel = supabase.channel('mapa_geral', {
       config: { broadcast: { self: false } }
     });
 
-    // Ouvir movimentos dos outros
+    // 2. Ouvir os outros (Não mexer aqui, isto é o que te faz ver os outros)
     channel
       .on('broadcast', { event: 'movimento' }, (payload) => {
         const { id, x, y } = payload.payload;
-        if (id) {
+        if (id && id !== userAddress) {
           setOtherPlayers(prev => ({
             ...prev,
             [id]: { x: Number(x), y: Number(y) }
@@ -39,32 +39,30 @@ const useGameSync = (userAddress) => {
   const enviarPosicao = async (x, y) => {
     if (!userAddress || !canalRef.current) return;
 
-    // 1. Broadcast Rápido (Multiplayer)
+    // A. Enviar para os outros jogadores (INSTANTÂNEO)
     canalRef.current.send({
       type: 'broadcast',
       event: 'movimento',
       payload: { id: userAddress, x, y },
     });
 
-    // 2. Gravação Lenta na DB (RPC) - 1 vez por segundo
+    // B. Salvar na DB (A cada 1.5s para não dar 400 por spam)
     const agora = Date.now();
-    if (agora - lastUpdate.current > 1000) {
+    if (agora - lastUpdate.current > 1500) {
       lastUpdate.current = agora;
       
-      console.log('📡 [RPC] Enviando para DB:', { p_id: userAddress, p_new_x: x, p_new_y: y });
-
-      const { error } = await supabase.rpc('mover_mineiro', {
+      // Chamada RPC silenciosa
+      supabase.rpc('mover_mineiro', {
         p_id: String(userAddress),
-        p_new_x: Number(x),
-        p_new_y: Number(y)
+        p_new_x: Number(x.toFixed(2)),
+        p_new_y: Number(y.toFixed(2))
+      }).then(({ error }) => {
+        if (error) console.warn("⚠️ [DB-SYNC] Aguardando coluna last_active ou erro RPC.");
       });
-
-      if (error) console.error("❌ [RPC ERROR]:", error.message);
     }
   };
 
   return { otherPlayers, enviarPosicao };
 };
 
-// FIX: Exportação default para bater certo com o GameStage.jsx
 export default useGameSync;
