@@ -57,8 +57,8 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
           }
 
           // CLAMP: Travar posição entre 0 e MAP_SIZE
-          pos.current.x = Math.max(0, Math.min(MAP_SIZE, pos.current.x));
-          pos.current.y = Math.max(0, Math.min(MAP_SIZE, pos.current.y));
+    pos.current.x = Math.max(0, Math.min(MAP_SIZE, pos.current.x));
+    pos.current.y = Math.max(0, Math.min(MAP_SIZE, pos.current.y));
 
   return (
     <Graphics
