@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import GameStage from './components/game/core/GameStage.jsx';
+import useLand from './hooks/useLand.js';
 
 function GameContent() {
   const { user, loading, connectWallet, disconnectWallet, profileData, hasPhantom } = useAuth();
   const [started, setStarted] = useState(false);
+  // Pega posição do mineiro
+  const mineiroPos = profileData ? { x: Number(profileData.pos_x), y: Number(profileData.pos_y) } : null;
+  const { currentLote, loading: loteLoading } = useLand(mineiroPos);
 
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center font-mono text-cyan-400 animate-pulse tracking-[0.5em]">
@@ -13,6 +17,30 @@ function GameContent() {
   );
 
   if (started && user) return <GameStage />;
+  if (started && user) return (
+    <>
+      {/* HUD do Terreno */}
+      <div className="fixed top-4 right-4 z-50 bg-slate-900/90 border-2 border-cyan-400 rounded-lg p-6 shadow-lg min-w-[260px]">
+        <h3 className="text-cyan-400 text-lg font-bold mb-2">INFO DO TERRENO</h3>
+        {loteLoading ? (
+          <div className="text-white text-xs">A carregar...</div>
+        ) : currentLote ? (
+          <>
+            <div className="text-white text-sm mb-1">LOTE: <span className="text-cyan-300">{currentLote.coord_x}, {currentLote.coord_y}</span></div>
+            <div className="text-white text-sm mb-1">STATUS: <span className="text-cyan-300">{currentLote.status}</span></div>
+            <div className="text-white text-sm mb-1">PREÇO: <span className="text-cyan-300">{currentLote.price} HASH</span></div>
+            <div className="text-white text-sm mb-3">DONO: <span className="text-cyan-300">{currentLote.owner || '---'}</span></div>
+            {currentLote.status === 'disponivel' && (
+              <button className="bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition">REIVINDICAR LOTE</button>
+            )}
+          </>
+        ) : (
+          <div className="text-white text-xs">Sem dados do lote.</div>
+        )}
+      </div>
+      <GameStage />
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-[#020617] relative flex flex-col items-center justify-center p-6 font-mono overflow-hidden">

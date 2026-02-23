@@ -17,6 +17,8 @@ export default function GameStage() {
     x: profileData?.pos_x || 500, 
     y: profileData?.pos_y || 500 
   });
+
+  // camPos será passado para useLand
   
   const [targetPos, setTargetPos] = useState(null);
 
