@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { useTick } from '@pixi/react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 import { Stage, Container } from '@pixi/react';
 import useGameSync from '../../../hooks/useGameSync.js';
@@ -15,14 +14,15 @@ export default function GameStage() {
   const [targetPos, setTargetPos] = useState({ x: initialX, y: initialY });
 
   // Câmara seguidora: estado da posição da câmara
-  const cameraPos = useRef({ x: (window.innerWidth / 2) - initialX, y: (window.innerHeight / 2) - initialY });
+  const [cameraPos, setCameraPos] = useState({ x: (window.innerWidth / 2) - initialX, y: (window.innerHeight / 2) - initialY });
 
-  // Atualiza a posição da câmara para manter o mineiro no centro
-  useTick(() => {
-    // O mineiro está sempre no centro do ecrã
-    cameraPos.current.x = (window.innerWidth / 2) - targetPos.x;
-    cameraPos.current.y = (window.innerHeight / 2) - targetPos.y;
-  });
+  // Atualiza a posição da câmara sempre que o mineiro se move
+  useEffect(() => {
+    setCameraPos({
+      x: (window.innerWidth / 2) - targetPos.x,
+      y: (window.innerHeight / 2) - targetPos.y,
+    });
+  }, [targetPos.x, targetPos.y]);
 
   // Captura o clique no mapa e define o novo destino
   const handlePointerDown = (e) => {
@@ -38,7 +38,7 @@ export default function GameStage() {
         height={window.innerHeight} 
         options={{ backgroundColor: 0x020617, antialias: true }}
       >
-        <Container x={cameraPos.current.x} y={cameraPos.current.y}>
+        <Container x={cameraPos.x} y={cameraPos.y}>
           <BackgroundLayer />
           <MultiplayerLayer players={otherPlayers} myId={user} />
           {/* O EntityLayer recebe o destino e avisa o rádio (onMove) */}
