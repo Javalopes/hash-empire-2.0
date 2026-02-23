@@ -1,46 +1,42 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.js';
 
-export default function useGameSync(userId, pos) {
+export const useGameSync = (user) => {
   const [otherPlayers, setOtherPlayers] = useState({});
-  const channelRef = useRef(null);
-  const lastSentRef = useRef(0);
-
-  // Função para enviar posição
-  const enviarPosicao = useCallback((x, y) => {
-    if (!userId || !channelRef.current) return;
-    const now = Date.now();
-    if (now - lastSentRef.current < 100) return; // throttle 100ms
-    lastSentRef.current = now;
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'movimento',
-      payload: { id: userId, x, y },
-    });
-  }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
-    // Cria canal com config
+    if (!user) return;
+    console.log("📡 [SISTEMA] Iniciando Canal Multiplayer...");
+
     const channel = supabase.channel('mapa_geral', {
-      broadcast: { self: false }
-    });
-    channelRef.current = channel;
-
-    channel.on('broadcast', { event: 'movimento' }, payload => {
-      const { id, x, y } = payload;
-      if (id === userId) return;
-      setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
+      config: { broadcast: { self: false } }
     });
 
-    channel.subscribe(status => {
-      console.log('📡 [REALTIME] Status:', status);
-    });
+    channel
+      .on('broadcast', { event: 'movimento' }, (payload) => {
+        console.log("👤 [RECEBIDO] Movimento de:", payload.payload.id);
+        setOtherPlayers(prev => ({
+          ...prev,
+          [payload.payload.id]: { x: payload.payload.x, y: payload.payload.y }
+        }));
+      })
+      .subscribe((status) => {
+        console.log("🛰️ [REALTIME] Status da Conexão:", status);
+      });
 
     return () => {
-      channel.unsubscribe();
+      console.log("🔌 [SISTEMA] Desconectando do Canal...");
+      supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [user]);
+
+  const enviarPosicao = (x, y) => {
+    supabase.channel('mapa_geral').send({
+      type: 'broadcast',
+      event: 'movimento',
+      payload: { id: user, x, y },
+    });
+  };
 
   return { otherPlayers, enviarPosicao };
-}
+};
