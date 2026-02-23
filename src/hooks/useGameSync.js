@@ -1,10 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase.js';
 
 export default function useGameSync(userId, pos) {
   const [otherPlayers, setOtherPlayers] = useState({});
   const channelRef = useRef(null);
   const lastSentRef = useRef(0);
+
+  // Função para enviar posição
+  const enviarPosicao = useCallback((x, y) => {
+    if (!userId || !channelRef.current) return;
+    const now = Date.now();
+    if (now - lastSentRef.current < 100) return; // throttle 100ms
+    lastSentRef.current = now;
+    channelRef.current.send({
+      type: 'broadcast',
+      event: 'posicao_jogador',
+      payload: { id: userId, x, y },
+    });
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -22,24 +35,16 @@ export default function useGameSync(userId, pos) {
       setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
     });
 
-    channel.subscribe();
+    channel.subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log('📡 [REALTIME] Canal subscrito com sucesso');
+      }
+    });
 
     return () => {
       channel.unsubscribe();
     };
   }, [userId]);
 
-  useEffect(() => {
-    if (!userId || !channelRef.current) return;
-    const now = Date.now();
-    if (now - lastSentRef.current < 100) return; // throttle 100ms
-    lastSentRef.current = now;
-    channelRef.current.send({
-      type: 'broadcast',
-      event: 'posicao_jogador',
-      payload: { id: userId, x: pos.x, y: pos.y },
-    });
-  }, [userId, pos.x, pos.y]);
-
-  return otherPlayers;
+  return { otherPlayers, enviarPosicao };
 }
