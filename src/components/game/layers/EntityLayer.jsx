@@ -1,83 +1,71 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Graphics, useTick } from '@pixi/react';
-import { useAuth } from '../../../lib/AuthContext';
+import { useAuth } from '../../../lib/AuthContext.jsx';
 
-const COLOR = 0x22d3ee;
-const GLOW_COLOR = 0x22d3ee;
-const INIT_X = 500;
-const INIT_Y = 500;
-const RADIUS = 24;
-const GLOW_RADIUS = 40;
-const GLOW_ALPHA = 0.2;
-
-function drawMineiro(x, y) {
-  return g => {
-    g.clear();
-    // Glow
-    g.beginFill(GLOW_COLOR, GLOW_ALPHA);
-    g.drawCircle(x, y, GLOW_RADIUS);
-    g.endFill();
-    // Main circle
-    g.beginFill(COLOR, 1);
-    g.drawCircle(x, y, RADIUS);
-    g.endFill();
-  };
-}
-
-const EntityLayer = React.memo(({ target, onMove, onPositionUpdate }) => {
+export default function EntityLayer({ target, onMove, onPositionUpdate }) {
   const { profileData } = useAuth();
-  const initialX = Number(profileData?.pos_x ?? INIT_X);
-  const initialY = Number(profileData?.pos_y ?? INIT_Y);
-  const posRef = useRef({ x: initialX, y: initialY });
-  const [pos, setPos] = useState(posRef.current);
-  const [targetPos, setTargetPos] = useState(target || posRef.current);
+  
+  // 1. Posição inicial vinda diretamente da base de dados
+  const pos = useRef({ 
+    x: profileData?.pos_x ?? 500, 
+    y: profileData?.pos_y ?? 500 
+  });
+  
   const hasSpawned = useRef(false);
 
+  // 2. Sincronização de Spawn (Teleporte imediato no login)
   useEffect(() => {
-    if (profileData && profileData.pos_x != null && profileData.pos_y != null && !hasSpawned.current) {
-      const dbX = Number(profileData.pos_x);
-      const dbY = Number(profileData.pos_y);
-      posRef.current.x = dbX;
-      posRef.current.y = dbY;
-      setPos({ x: dbX, y: dbY });
-      setTargetPos({ x: dbX, y: dbY });
+    if (profileData && !hasSpawned.current) {
+      pos.current.x = Number(profileData.pos_x);
+      pos.current.y = Number(profileData.pos_y);
+      if (onPositionUpdate) onPositionUpdate(pos.current.x, pos.current.y);
       hasSpawned.current = true;
-      if (typeof onPositionUpdate === 'function') onPositionUpdate(dbX, dbY);
+      console.log("📍 [SPAWN] Mineiro posicionado em:", pos.current.x, pos.current.y);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileData?.pos_x, profileData?.pos_y]);
+  }, [profileData, onPositionUpdate]);
 
-  useEffect(() => {
-    if (target) setTargetPos(target);
-  }, [target]);
+  // 3. Loop de Movimento (O motor do boneco)
+  useTick((delta) => {
+    // Se não houver alvo ou o perfil não carregou, não faz nada
+    if (!target || !profileData) return;
 
-  useTick(() => {
-    if (!profileData || !targetPos) return;
-    // Permite movimento sempre que targetPos existe
-    const dx = targetPos.x - posRef.current.x;
-    const dy = targetPos.y - posRef.current.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 1) {
-      // Move 5 pixels por frame na direção do destino
-      const angle = Math.atan2(dy, dx);
-      posRef.current.x += Math.cos(angle) * Math.min(5, dist);
-      posRef.current.y += Math.sin(angle) * Math.min(5, dist);
-      setPos({ ...posRef.current });
-      if (typeof onMove === 'function') onMove(posRef.current.x, posRef.current.y);
-      if (typeof onPositionUpdate === 'function') onPositionUpdate(posRef.current.x, posRef.current.y);
-    } else if (dist > 0) {
-      posRef.current.x = targetPos.x;
-      posRef.current.y = targetPos.y;
-      setPos({ ...targetPos });
-      if (typeof onMove === 'function') onMove(targetPos.x, targetPos.y);
-      if (typeof onPositionUpdate === 'function') onPositionUpdate(targetPos.x, targetPos.y);
+    const dx = target.x - pos.current.x;
+    const dy = target.y - pos.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Se a distância for relevante, desliza (Lerp)
+    if (distance > 1) {
+      const speed = 0.1 * delta;
+      pos.current.x += dx * speed;
+      pos.current.y += dy * speed;
+      
+      // ATUALIZA A CÂMARA (Vital para o GameStage seguir o boneco)
+      if (onPositionUpdate) {
+        onPositionUpdate(pos.current.x, pos.current.y);
+      }
+      
+      // AVISA OS OUTROS JOGADORES (Multiplayer)
+      if (onMove) {
+        onMove(pos.current.x, pos.current.y);
+      }
     }
   });
 
-  const draw = useMemo(() => drawMineiro(pos.x, pos.y), [pos]);
-
-  return <Graphics draw={draw} />;
-});
-
-export default EntityLayer;
+  return (
+    <Graphics
+      draw={(g) => {
+        g.clear();
+        // Círculo Ciano Néon (O Teu Mineiro)
+        g.beginFill(0x22d3ee, 1);
+        g.drawCircle(pos.current.x, pos.current.y, 12);
+        g.endFill();
+        
+        // Efeito de brilho interno
+        g.beginFill(0xffffff, 0.3);
+        g.drawCircle(pos.current.x, pos.current.y, 4);
+        g.endFill();
+      }}
+    />
+  );
+}
 
