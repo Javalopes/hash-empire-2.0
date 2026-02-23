@@ -122,6 +122,22 @@ const LandLayer = ({ playerPos }) => {
           borderColor = HIGHLIGHT_COLOR;
           borderAlpha = HIGHLIGHT_ALPHA;
         }
+        // Portais: 4 lados
+        const portals = [
+          { side: 'N', x: px + LOTE_SIZE / 2 - 16, y: py - ROAD_SIZE / 2 - 4, w: 32, h: 8 }, // Norte
+          { side: 'S', x: px + LOTE_SIZE / 2 - 16, y: py + LOTE_SIZE + ROAD_SIZE / 2 - 4, w: 32, h: 8 }, // Sul
+          { side: 'E', x: px + LOTE_SIZE + ROAD_SIZE / 2 - 4, y: py + LOTE_SIZE / 2 - 16, w: 8, h: 32 }, // Este
+          { side: 'W', x: px - ROAD_SIZE / 2 - 4, y: py + LOTE_SIZE / 2 - 16, w: 8, h: 32 }, // Oeste
+        ];
+
+        // Mineiro colide com portal?
+        const portalCollisions = portals.map(portal => {
+          const pxMid = portal.x + portal.w / 2;
+          const pyMid = portal.y + portal.h / 2;
+          const dist = Math.sqrt((playerPos.x - pxMid) ** 2 + (playerPos.y - pyMid) ** 2);
+          return dist < 24; // Colisão se mineiro está a menos de 24px do centro da porta
+        });
+
         return (
           <React.Fragment key={`lot-${x}-${y}`}>
             <Graphics
@@ -134,6 +150,24 @@ const LandLayer = ({ playerPos }) => {
                 }
                 g.lineStyle(2, borderColor, borderAlpha);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
+                // Portais
+                portals.forEach((portal, idx) => {
+                  // Cor base
+                  let color = 0x475569;
+                  let alpha = 0.7;
+                  // Efeito Neon: se meu lote, brilha ciano
+                  if (lote && lote.owner_id === user) {
+                    color = 0x22d3ee;
+                    alpha = 0.9;
+                  }
+                  // Interatividade: se colidindo, brilho máximo
+                  if (portalCollisions[idx]) {
+                    alpha = 1;
+                  }
+                  g.beginFill(color, alpha);
+                  g.drawRect(portal.x, portal.y, portal.w, portal.h);
+                  g.endFill();
+                });
               }}
             />
             <Text

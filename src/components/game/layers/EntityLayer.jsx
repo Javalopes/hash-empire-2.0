@@ -4,15 +4,15 @@ import { useAuth } from '../../../lib/AuthContext.jsx';
 
 export default function EntityLayer({ target, onMove, onPositionUpdate }) {
     const MAP_SIZE = 5000;
+    const { profileData } = useAuth();
+
+    // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
+    const pos = useRef({
+      x: Number(profileData?.pos_x ?? 500),
+      y: Number(profileData?.pos_y ?? 500)
+    });
     // Ref para última posição enviada ao onMove
     const lastSentPos = useRef({ x: pos.current.x, y: pos.current.y });
-  const { profileData } = useAuth();
-
-  // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
-  const pos = useRef({
-    x: Number(profileData?.pos_x ?? 500),
-    y: Number(profileData?.pos_y ?? 500)
-  });
 
   const hasSpawned = useRef(false);
 
