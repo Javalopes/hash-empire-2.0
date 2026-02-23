@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../../lib/AuthContext.jsx';
 import { Stage, Container } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 import useGameSync from '../../../hooks/useGameSync.js';
@@ -7,9 +8,11 @@ import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
-  const { user } = useAuth();
+  const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
-  const [targetPos, setTargetPos] = useState({ x: 500, y: 500 });
+  const initialX = Number(profileData?.pos_x ?? 500);
+  const initialY = Number(profileData?.pos_y ?? 500);
+  const [targetPos, setTargetPos] = useState({ x: initialX, y: initialY });
 
   // Captura o clique no mapa e define o novo destino
   const handlePointerDown = (e) => {

@@ -27,11 +27,23 @@ function drawMineiro(x, y) {
 const EntityLayer = React.memo(({ target, onMove }) => {
   const { profileData } = useAuth();
   const posRef = useRef({
-    x: profileData?.pos_x || INIT_X,
-    y: profileData?.pos_y || INIT_Y,
+    x: Number(profileData?.pos_x ?? INIT_X),
+    y: Number(profileData?.pos_y ?? INIT_Y),
   });
   const [pos, setPos] = useState(posRef.current);
   const [targetPos, setTargetPos] = useState(target || posRef.current);
+
+  // Atualiza posRef na primeira carga válida de profileData
+  useEffect(() => {
+    if (profileData && profileData.pos_x != null && profileData.pos_y != null) {
+      posRef.current.x = Number(profileData.pos_x);
+      posRef.current.y = Number(profileData.pos_y);
+      setPos({ ...posRef.current });
+      setTargetPos({ ...posRef.current });
+    }
+    // Só executa na primeira carga válida
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileData?.pos_x, profileData?.pos_y]);
 
   useEffect(() => {
     if (target) setTargetPos(target);
