@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 const GRID_STEP = 256 + 64;
@@ -9,6 +9,18 @@ export default function useLand(playerPos) {
   const [buying, setBuying] = useState(false);
   const lastCoords = useRef({ cx: null, cy: null });
 
+  // Função para buscar lote
+  const fetchLote = useCallback(async (cx, cy) => {
+    setLoading(true);
+    const { data: loteData } = await supabase
+      .from('land_registry')
+      .select('*')
+      .match({ coord_x: cx, coord_y: cy })
+      .maybeSingle();
+    setCurrentLote(loteData || { coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
+    setLoading(false);
+  }, []);
+
   // Função para reivindicar lote
   async function reivindicar(cx, cy, wallet) {
     setBuying(true);
@@ -18,15 +30,7 @@ export default function useLand(playerPos) {
       p_cy: cy
     });
     setBuying(false);
-    // Refresh do lote
-    setLoading(true);
-    const { data: loteData } = await supabase
-      .from('land_registry')
-      .select('*')
-      .match({ coord_x: cx, coord_y: cy })
-      .maybeSingle();
-    setCurrentLote(loteData || { coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
-    setLoading(false);
+    await fetchLote(cx, cy); // Atualiza HUD imediatamente
   }
 
   useEffect(() => {
@@ -37,21 +41,8 @@ export default function useLand(playerPos) {
     // Só faz pedido se cx/cy mudarem
     if (lastCoords.current.cx === cx && lastCoords.current.cy === cy) return;
     lastCoords.current = { cx, cy };
-    setLoading(true);
-    supabase
-      .from('land_registry')
-      .select('*')
-      .match({ coord_x: cx, coord_y: cy })
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!data) {
-          setCurrentLote({ coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
-        } else {
-          setCurrentLote(data);
-        }
-        setLoading(false);
-      });
-  }, [playerPos]);
+    fetchLote(cx, cy);
+  }, [playerPos, fetchLote]);
 
-  return { currentLote, loading, buying, reivindicar };
+  return { currentLote, loading: loading || buying, buying, reivindicar };
 }
