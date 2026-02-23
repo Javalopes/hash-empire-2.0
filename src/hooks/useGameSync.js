@@ -14,7 +14,8 @@ const useGameSync = (userAddress) => {
     channel
       .on('broadcast', { event: 'movimento' }, (payload) => {
         const { id, x, y } = payload.payload;
-        if (id) {
+        // Não adiciona o próprio jogador ao mapa de outros
+        if (id && id !== userAddress) {
           setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
         }
       })
