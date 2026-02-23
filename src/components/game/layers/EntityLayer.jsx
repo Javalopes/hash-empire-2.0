@@ -82,4 +82,3 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
     />
   );
 }
-
