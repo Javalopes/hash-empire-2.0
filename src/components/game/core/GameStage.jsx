@@ -8,6 +8,8 @@ import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
+      // Importa o hook de lotes
+      const { currentLote, reivindicar, loading } = require('../../../hooks/useLand.js').default(livePos);
     const MAP_SIZE = 5000;
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
@@ -58,6 +60,25 @@ export default function GameStage() {
             />
           </Container>
         </Stage>
+        {/* HUD do Terreno */}
+        {currentLote && !loading && (
+          <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, pointerEvents: 'auto' }} className="bg-slate-900/90 border-2 border-cyan-400 rounded-lg p-6 shadow-lg min-w-[260px]">
+            <h3 className="text-cyan-400 text-lg font-bold mb-2">INFO DO TERRENO</h3>
+            <div className="text-white text-sm mb-1">LOTE: <span className="text-cyan-300">{currentLote.coord_x}, {currentLote.coord_y}</span></div>
+            <div className="text-white text-sm mb-1">STATUS: <span className="text-cyan-300">{currentLote.status}</span></div>
+            <div className="text-white text-sm mb-1">PREÇO: <span className="text-cyan-300">{currentLote.price} HASH</span></div>
+            <div className="text-white text-sm mb-3">DONO: <span className="text-cyan-300">{currentLote.owner || '---'}</span></div>
+            {!currentLote.owner_id && currentLote.status === 'disponivel' && (
+              <button
+                className="bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition"
+                disabled={loading}
+                onClick={() => reivindicar(currentLote.coord_x, currentLote.coord_y, user)}
+              >
+                {loading ? 'A REIVINDICAR...' : 'REIVINDICAR AGORA'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
 }
