@@ -3,43 +3,51 @@ import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 
 export default function EntityLayer({ target, onMove, onPositionUpdate, currentLote, user, onEnterEdificio }) {
-      // Estado para mostrar botão de entrada
-      const [showEnter, setShowEnter] = useState(false);
-      // Detecção de proximidade às portas
-      useEffect(() => {
-        if (!currentLote || !user) {
-          setShowEnter(false);
-          return;
-        }
-        // Verifica se é meu lote
-        const isMine = String(currentLote.owner_id) === String(user);
-        if (!isMine) {
-          setShowEnter(false);
-          return;
-        }
-        // Calcula posição do lote
-        const LOTE_SIZE = 256;
-        const px = currentLote.coord_x * (LOTE_SIZE + 64);
-        const py = currentLote.coord_y * (LOTE_SIZE + 64);
-        // Portas: 4 lados
-        const portals = [
-          { x: px + (LOTE_SIZE / 2) - 16, y: py - 4, w: 32, h: 8 }, // Topo
-          { x: px + (LOTE_SIZE / 2) - 16, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
-          { x: px + LOTE_SIZE - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Direita
-          { x: px - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Esquerda
-        ];
-        // Posição do mineiro
-        const mx = pos.current.x;
-        const my = pos.current.y;
-        // Verifica proximidade a qualquer porta
-        const nearPortal = portals.some(portal => {
-          const pxMid = portal.x + portal.w / 2;
-          const pyMid = portal.y + portal.h / 2;
-          const dist = Math.sqrt((mx - pxMid) ** 2 + (my - pyMid) ** 2);
-          return dist < 24;
-        });
-        setShowEnter(nearPortal);
-      }, [currentLote, user, pos.current.x, pos.current.y]);
+    const MAP_SIZE = 5000;
+    const { profileData } = useAuth();
+
+    // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
+    const pos = useRef({
+      x: Number(profileData?.pos_x ?? 500),
+      y: Number(profileData?.pos_y ?? 500)
+    });
+    // Estado para mostrar botão de entrada
+    const [showEnter, setShowEnter] = useState(false);
+    // Detecção de proximidade às portas
+    useEffect(() => {
+      if (!currentLote || !user) {
+        setShowEnter(false);
+        return;
+      }
+      // Verifica se é meu lote
+      const isMine = String(currentLote.owner_id) === String(user);
+      if (!isMine) {
+        setShowEnter(false);
+        return;
+      }
+      // Calcula posição do lote
+      const LOTE_SIZE = 256;
+      const px = currentLote.coord_x * (LOTE_SIZE + 64);
+      const py = currentLote.coord_y * (LOTE_SIZE + 64);
+      // Portas: 4 lados
+      const portals = [
+        { x: px + (LOTE_SIZE / 2) - 16, y: py - 4, w: 32, h: 8 }, // Topo
+        { x: px + (LOTE_SIZE / 2) - 16, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
+        { x: px + LOTE_SIZE - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Direita
+        { x: px - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Esquerda
+      ];
+      // Posição do mineiro
+      const mx = pos.current.x;
+      const my = pos.current.y;
+      // Verifica proximidade a qualquer porta
+      const nearPortal = portals.some(portal => {
+        const pxMid = portal.x + portal.w / 2;
+        const pyMid = portal.y + portal.h / 2;
+        const dist = Math.sqrt((mx - pxMid) ** 2 + (my - pyMid) ** 2);
+        return dist < 24;
+      });
+      setShowEnter(nearPortal);
+    }, [currentLote, user, pos.current.x, pos.current.y]);
     const MAP_SIZE = 5000;
     const { profileData } = useAuth();
 
