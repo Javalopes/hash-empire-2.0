@@ -115,8 +115,8 @@ const LandLayer = ({ playerPos }) => {
         let fillColor = null;
         let borderColor = BASE_COLOR;
         let borderAlpha = BASE_ALPHA;
-        // Verificação correta de dono
-        const isMine = lote && String(lote.owner_id) === String(user);
+        // Verificação correta de dono (ignora maiúsculas/minúsculas)
+        const isMine = lote && String(lote.owner_id).toLowerCase() === String(user?.id || user).toLowerCase();
         if (lote && lote.owner_id) {
           if (isMine) {
             // Meu lote
@@ -155,6 +155,7 @@ const LandLayer = ({ playerPos }) => {
             <Graphics
               draw={g => {
                 g.clear();
+                // Lote
                 if (fillColor && isMine) {
                   g.beginFill(fillColor, 0.2);
                   g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
@@ -162,11 +163,10 @@ const LandLayer = ({ playerPos }) => {
                 }
                 g.lineStyle(2, borderColor, borderAlpha);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
-                // Portas
+                // Portas (após o lote)
                 portals.forEach((portal) => {
                   let color = 0x475569;
                   let alpha = 0.7;
-                  // Se o lote for meu, portas ciano
                   if (isMine) {
                     color = 0x22d3ee;
                     alpha = 0.9;

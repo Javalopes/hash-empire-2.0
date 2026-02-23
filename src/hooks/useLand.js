@@ -18,7 +18,14 @@ export default function useLand(playerPos) {
       .match({ coord_x: cx, coord_y: cy })
       .maybeSingle();
     if (!loteData) {
-      setCurrentLote({ coord_x: cx, coord_y: cy, status: 'disponivel' });
+      setCurrentLote({
+        coord_x: cx,
+        coord_y: cy,
+        status: 'disponivel',
+        price: 1000,
+        owner: null,
+        owner_id: null
+      });
     } else {
       setCurrentLote(loteData);
     }
