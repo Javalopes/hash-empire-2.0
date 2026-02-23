@@ -4,6 +4,8 @@ import { useAuth } from '../../../lib/AuthContext.jsx';
 
 export default function EntityLayer({ target, onMove, onPositionUpdate }) {
     const MAP_SIZE = 5000;
+    // Ref para última posição enviada ao onMove
+    const lastSentPos = useRef({ x: pos.current.x, y: pos.current.y });
   const { profileData } = useAuth();
 
   // 1. CARREGAMENTO DA DB: Inicia na posição guardada (evita o reset para 500,500)
@@ -67,9 +69,16 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
       onPositionUpdate(pos.current.x, pos.current.y);
     }
 
-    // ATUALIZA O MULTIPLAYER (Informa o rádio/Supabase)
+    // ATUALIZA O MULTIPLAYER (Throttle: só envia se moveu >5px)
     if (onMove) {
-      onMove(pos.current.x, pos.current.y);
+      const dx = pos.current.x - lastSentPos.current.x;
+      const dy = pos.current.y - lastSentPos.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 5) {
+        onMove(pos.current.x, pos.current.y);
+        lastSentPos.current.x = pos.current.x;
+        lastSentPos.current.y = pos.current.y;
+      }
     }
   });
 

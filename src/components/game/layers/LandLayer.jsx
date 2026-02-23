@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Container, Graphics, Text } from '@pixi/react';
+import { useAuth } from '../../../lib/AuthContext.jsx';
+import { supabase } from '../../../lib/supabase';
 
 const LOTE_SIZE = 256;
 const ROAD_SIZE = 64;
@@ -30,6 +32,18 @@ function isInsideLot(x, y, px, py) {
 }
 
 const LandLayer = ({ playerPos }) => {
+    const { user } = useAuth();
+    const [ownedLots, setOwnedLots] = useState([]);
+
+    useEffect(() => {
+      // Carrega todos os lotes ocupados uma vez
+      supabase
+        .from('land_registry')
+        .select('*')
+        .then(({ data }) => {
+          setOwnedLots(data || []);
+        });
+    }, []);
   // Calcula o lote atual do jogador
   const gridStep = LOTE_SIZE + ROAD_SIZE;
   const { lotX: playerLotX, lotY: playerLotY } = getLotCoords(playerPos.x, playerPos.y);
@@ -82,20 +96,43 @@ const LandLayer = ({ playerPos }) => {
         }
         return null;
       })}
-      {/* Desenha os lotes */}
+      {/* Desenha os lotes com cores de dono */}
       {lots.map(({ x, y }) => {
         const px = x * gridStep;
         const py = y * gridStep;
         // Verifica se o mineiro está dentro do lote
         const isPlayerLot = isInsideLot(playerPos.x, playerPos.y, px, py);
-        const color = isPlayerLot ? HIGHLIGHT_COLOR : BASE_COLOR;
-        const alpha = isPlayerLot ? HIGHLIGHT_ALPHA : BASE_ALPHA;
+        // Busca dono do lote
+        const lote = ownedLots.find(l => l.coord_x === x && l.coord_y === y);
+        let fillColor = null;
+        let borderColor = BASE_COLOR;
+        let borderAlpha = BASE_ALPHA;
+        if (lote && lote.owner_id) {
+          if (lote.owner_id === user) {
+            // Meu lote
+            fillColor = HIGHLIGHT_COLOR;
+            borderColor = 0xffd700; // Dourado
+            borderAlpha = 1;
+          } else {
+            // Lote de outro
+            borderColor = 0xf87171; // Vermelho suave
+            borderAlpha = 1;
+          }
+        } else if (isPlayerLot) {
+          borderColor = HIGHLIGHT_COLOR;
+          borderAlpha = HIGHLIGHT_ALPHA;
+        }
         return (
           <React.Fragment key={`lot-${x}-${y}`}>
             <Graphics
               draw={g => {
                 g.clear();
-                g.lineStyle(2, color, alpha);
+                if (fillColor && lote && lote.owner_id === user) {
+                  g.beginFill(fillColor, 0.2);
+                  g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
+                  g.endFill();
+                }
+                g.lineStyle(2, borderColor, borderAlpha);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
               }}
             />
@@ -103,7 +140,7 @@ const LandLayer = ({ playerPos }) => {
               text={`LOTE ${x},${y}`}
               x={px + 6}
               y={py + 6}
-              style={{ fontSize: 18, fill: color, alpha, fontWeight: 'bold' }}
+              style={{ fontSize: 18, fill: borderColor, alpha: borderAlpha, fontWeight: 'bold' }}
             />
           </React.Fragment>
         );

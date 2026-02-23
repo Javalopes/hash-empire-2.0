@@ -57,17 +57,22 @@ const useGameSync = (userAddress) => {
   const enviarPosicao = async (x, y) => {
     if (!userAddress || !canalRef.current) return;
 
-    // A. Enviar para os outros jogadores (INSTANTÂNEO)
-    canalRef.current.send({
-      type: 'broadcast',
-      event: 'movimento',
-      payload: { id: userAddress, x, y },
-    });
-
-    // B. Salvar na DB (A cada 1.5s para não dar 400 por spam)
+    // Filtro de Spam: trava de tempo de 50ms
     const agora = Date.now();
+    if (agora - lastUpdate.current < 50) return;
+    lastUpdate.current = agora;
+
+    // Fallback Silencioso: só envia se canal SUBSCRIBED
+    if (canalRef.current.state === 'SUBSCRIBED') {
+      canalRef.current.send({
+        type: 'broadcast',
+        event: 'movimento',
+        payload: { id: userAddress, x, y },
+      });
+    }
+
+    // Salvar na DB (A cada 1.5s para não dar 400 por spam)
     if (agora - lastUpdate.current > 1500) {
-      lastUpdate.current = agora;
       // Chamada RPC silenciosa
       supabase.rpc('mover_mineiro', {
         p_id: String(userAddress),
