@@ -24,7 +24,7 @@ function drawMineiro(x, y) {
   };
 }
 
-const EntityLayer = React.memo(({ target, onMove }) => {
+const EntityLayer = React.memo(({ target, onMove, onPositionUpdate }) => {
   const { profileData } = useAuth();
   // Inicializa exatamente com valores da DB
   const initialX = Number(profileData?.pos_x ?? INIT_X);
@@ -42,6 +42,7 @@ const EntityLayer = React.memo(({ target, onMove }) => {
       posRef.current.y = dbY;
       setPos({ x: dbX, y: dbY });
       setTargetPos({ x: dbX, y: dbY });
+      if (typeof onPositionUpdate === 'function') onPositionUpdate(dbX, dbY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.pos_x, profileData?.pos_y]);
@@ -65,10 +66,12 @@ const EntityLayer = React.memo(({ target, onMove }) => {
       };
       setPos({ ...posRef.current });
       if (typeof onMove === 'function') onMove(posRef.current.x, posRef.current.y);
+      if (typeof onPositionUpdate === 'function') onPositionUpdate(posRef.current.x, posRef.current.y);
     } else {
       posRef.current = { ...targetPos };
       setPos({ ...targetPos });
       if (typeof onMove === 'function') onMove(targetPos.x, targetPos.y);
+      if (typeof onPositionUpdate === 'function') onPositionUpdate(targetPos.x, targetPos.y);
     }
   });
 
