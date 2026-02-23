@@ -13,16 +13,8 @@ export default function GameStage() {
   const initialY = Number(profileData?.pos_y ?? 500);
   const [targetPos, setTargetPos] = useState({ x: initialX, y: initialY });
 
-  // Câmara seguidora: estado da posição da câmara
-  const [cameraPos, setCameraPos] = useState({ x: (window.innerWidth / 2) - initialX, y: (window.innerHeight / 2) - initialY });
-
-  // Atualiza a posição da câmara sempre que o mineiro se move
-  useEffect(() => {
-    setCameraPos({
-      x: (window.innerWidth / 2) - targetPos.x,
-      y: (window.innerHeight / 2) - targetPos.y,
-    });
-  }, [targetPos.x, targetPos.y]);
+  // Estado da câmara: segue o boneco
+  const [camPos, setCamPos] = useState({ x: initialX, y: initialY });
 
   // Captura o clique no mapa e define o novo destino
   const handlePointerDown = (e) => {
@@ -38,11 +30,11 @@ export default function GameStage() {
         height={window.innerHeight} 
         options={{ backgroundColor: 0x020617, antialias: true }}
       >
-        <Container x={cameraPos.x} y={cameraPos.y}>
+        <Container x={ (window.innerWidth / 2) - camPos.x } y={ (window.innerHeight / 2) - camPos.y }>
           <BackgroundLayer />
           <MultiplayerLayer players={otherPlayers} myId={user} />
           {/* O EntityLayer recebe o destino e avisa o rádio (onMove) */}
-          <EntityLayer target={targetPos} onMove={enviarPosicao} />
+          <EntityLayer target={targetPos} onMove={enviarPosicao} onPositionUpdate={(x, y) => setCamPos({ x, y })} />
         </Container>
       </Stage>
     </div>
