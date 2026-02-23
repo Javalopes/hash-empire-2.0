@@ -10,7 +10,7 @@ export default function GameStage() {
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
   
-  // Inicia a câmara na posição do perfil
+  // Câmara inicia onde o jogador está
   const [camPos, setCamPos] = useState({ 
     x: profileData?.pos_x || 500, 
     y: profileData?.pos_y || 500 
@@ -19,26 +19,21 @@ export default function GameStage() {
   const [targetPos, setTargetPos] = useState(null);
 
   const handleStageClick = (e) => {
-    // Cálculo real: Ponto no ecrã + Deslocamento da Câmara
-    const worldX = e.nativeEvent.offsetX - ((window.innerWidth / 2) - camPos.x);
-    const worldY = e.nativeEvent.offsetY - ((window.innerHeight / 2) - camPos.y);
+    // IMPORTANTE: Coordenada do clique + Deslocamento da Câmara
+    const worldX = e.nativeEvent.offsetX + (camPos.x - window.innerWidth / 2);
+    const worldY = e.nativeEvent.offsetY + (camPos.y - window.innerHeight / 2);
     
-    console.log("🎯 [MAPA] Novo Destino:", worldX, worldY);
     setTargetPos({ x: worldX, y: worldY });
   };
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-[#020617]">
+    <div onPointerDown={handleStageClick} className="w-full h-screen bg-[#020617]">
       <Stage 
         width={window.innerWidth} 
         height={window.innerHeight} 
         options={{ backgroundColor: 0x020617, antialias: true, eventMode: 'static' }}
-        onPointerDown={handleStageClick}
       >
-        <Container 
-          x={(window.innerWidth / 2) - camPos.x} 
-          y={(window.innerHeight / 2) - camPos.y}
-        >
+        <Container x={(window.innerWidth / 2) - camPos.x} y={(window.innerHeight / 2) - camPos.y}>
           <BackgroundLayer />
           <MultiplayerLayer players={otherPlayers} myId={user} />
           <EntityLayer 
