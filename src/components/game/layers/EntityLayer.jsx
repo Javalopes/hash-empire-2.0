@@ -52,24 +52,22 @@ const EntityLayer = React.memo(({ target, onMove, onPositionUpdate }) => {
   }, [target]);
 
   useTick(() => {
-    if (!profileData) return;
-    // Bloqueia movimento até targetPos ser diferente da posição inicial
-    if (targetPos.x === posRef.current.x && targetPos.y === posRef.current.y) return;
+    if (!profileData || !targetPos) return;
+    // Permite movimento sempre que targetPos existe
     const dx = targetPos.x - posRef.current.x;
     const dy = targetPos.y - posRef.current.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist > 1) {
       // Move 5 pixels por frame na direção do destino
       const angle = Math.atan2(dy, dx);
-      posRef.current = {
-        x: posRef.current.x + Math.cos(angle) * Math.min(5, dist),
-        y: posRef.current.y + Math.sin(angle) * Math.min(5, dist),
-      };
+      posRef.current.x += Math.cos(angle) * Math.min(5, dist);
+      posRef.current.y += Math.sin(angle) * Math.min(5, dist);
       setPos({ ...posRef.current });
       if (typeof onMove === 'function') onMove(posRef.current.x, posRef.current.y);
       if (typeof onPositionUpdate === 'function') onPositionUpdate(posRef.current.x, posRef.current.y);
-    } else {
-      posRef.current = { ...targetPos };
+    } else if (dist > 0) {
+      posRef.current.x = targetPos.x;
+      posRef.current.y = targetPos.y;
       setPos({ ...targetPos });
       if (typeof onMove === 'function') onMove(targetPos.x, targetPos.y);
       if (typeof onPositionUpdate === 'function') onPositionUpdate(targetPos.x, targetPos.y);

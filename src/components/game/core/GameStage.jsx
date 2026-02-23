@@ -19,13 +19,13 @@ export default function GameStage() {
   const [camPos, setCamPos] = useState({ x: initialX, y: initialY });
 
   // Captura o clique no mapa e define o novo destino (compensando a câmara)
-  const handlePointerDown = (e) => {
+  const handleStageClick = (e) => {
     const x = e.nativeEvent.offsetX;
     const y = e.nativeEvent.offsetY;
-    // Compensa a câmara para obter coordenadas reais do mapa
-    const realX = x + camPos.x;
-    const realY = y + camPos.y;
-    setTargetPos({ x: realX, y: realY });
+    // Compensa a câmara para obter coordenadas reais do mundo
+    const worldX = x + (camPos.x * -1);
+    const worldY = y + (camPos.y * -1);
+    setTargetPos({ x: worldX, y: worldY });
   };
 
   return (
@@ -33,7 +33,8 @@ export default function GameStage() {
       width={window.innerWidth} 
       height={window.innerHeight} 
       options={{ backgroundColor: 0x020617, antialias: true }}
-      onPointerDown={handlePointerDown}
+      onPointerDown={handleStageClick}
+      eventMode="static"
     >
       <Container x={ (window.innerWidth / 2) - camPos.x } y={ (window.innerHeight / 2) - camPos.y }>
         <BackgroundLayer />
