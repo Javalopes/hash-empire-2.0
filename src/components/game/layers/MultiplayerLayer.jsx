@@ -1,40 +1,47 @@
 import React from 'react';
 import { Graphics, Container, Text } from '@pixi/react';
-import { useAuth } from '../../../lib/AuthContext';
+import { useAuth } from '../../../lib/AuthContext.jsx';
 import * as PIXI from 'pixi.js';
 
-export default function MultiplayerLayer({ players }) {
-  const { user } = useAuth(); // Puxamos o teu ID de wallet
+export default function MultiplayerLayer({ players = {} }) {
+  const { user } = useAuth(); // O teu ID (Ex: 9kPNck...)
+
+  // Log de Debug para vermos quem está na rede (vê na consola F12)
+  // console.log("👥 [MULTIPLAYER] Lista de IDs recebidos:", Object.keys(players));
 
   return (
     <Container>
       {Object.entries(players)
-        // FILTRO CRÍTICO: Só desenha se o ID for DIFERENTE da minha wallet
+        // 🛡️ FILTRO DE SEGURANÇA: Remove o meu próprio ID da lista de desenho
         .filter(([id]) => id !== user) 
         .map(([id, player]) => (
           <Container key={id} x={player.x} y={player.y}>
-            {/* Boneco Rosa Néon para os Outros */}
+            {/* Boneco Magenta para os Vizinhos */}
             <Graphics
               draw={(g) => {
                 g.clear();
-                g.beginFill(0xff00ff, 0.3); // Glow externo
+                g.beginFill(0xff00ff, 0.3); // Glow néon
                 g.drawCircle(0, 0, 15);
                 g.endFill();
-                g.beginFill(0xff00ff, 1);   // Centro sólido
+                g.beginFill(0xff00ff, 1);   // Núcleo sólido
                 g.drawCircle(0, 0, 8);
                 g.endFill();
               }}
             />
-            {/* Nome/Wallet do Jogador por cima */}
+            {/* Etiqueta de Identificação */}
             <Text
-              text={id.substring(0, 4) + "..."}
-              x={-15}
-              y={-30}
+              text={id ? id.substring(0, 5) : "???"}
+              x={-20}
+              y={-35}
               style={new PIXI.TextStyle({
                 fill: 0xff00ff,
-                fontSize: 10,
+                fontSize: 11,
                 fontFamily: 'monospace',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                dropShadow: true,
+                dropShadowColor: '#000000',
+                dropShadowBlur: 4,
+                dropShadowDistance: 2
               })}
             />
           </Container>
