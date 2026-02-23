@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
 
+import { useAuth } from '../lib/AuthContext.jsx';
+
 const useGameSync = (userAddress) => {
   const [otherPlayers, setOtherPlayers] = useState({});
   const lastUpdate = useRef(0);
   const canalRef = useRef(null);
+  const { profileData } = useAuth();
 
   useEffect(() => {
     if (!userAddress) return;
@@ -25,8 +28,23 @@ const useGameSync = (userAddress) => {
           }));
         }
       })
+      // Ouvinte para request_sync: responde com a posição atual
+      .on('broadcast', { event: 'request_sync' }, () => {
+        // Responde com a posição atual
+        if (profileData && profileData.pos_x != null && profileData.pos_y != null) {
+          enviarPosicao(Number(profileData.pos_x), Number(profileData.pos_y));
+        }
+      })
       .subscribe((status) => {
         console.log("🛰️ [REALTIME] Status:", status);
+        // Grito de entrada: assim que SUBSCRIBED, pede sincronização
+        if (status === 'SUBSCRIBED') {
+          channel.send({
+            type: 'broadcast',
+            event: 'request_sync',
+            payload: {},
+          });
+        }
       });
 
     canalRef.current = channel;
@@ -50,12 +68,11 @@ const useGameSync = (userAddress) => {
     const agora = Date.now();
     if (agora - lastUpdate.current > 1500) {
       lastUpdate.current = agora;
-      
       // Chamada RPC silenciosa
       supabase.rpc('mover_mineiro', {
         p_id: String(userAddress),
-        p_new_x: Number(x.toFixed(2)),
-        p_new_y: Number(y.toFixed(2))
+        p_new_x: Number(x),
+        p_new_y: Number(y)
       }).then(({ error }) => {
         if (error) console.warn("⚠️ [DB-SYNC] Aguardando coluna last_active ou erro RPC.");
       });
