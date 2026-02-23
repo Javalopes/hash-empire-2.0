@@ -115,8 +115,8 @@ const LandLayer = ({ playerPos }) => {
         let fillColor = null;
         let borderColor = BASE_COLOR;
         let borderAlpha = BASE_ALPHA;
-        // Corrige comparação de ID
-        const isMine = lote && (lote.owner_id === user?.id || lote.owner_id === user);
+        // Verificação correta de dono
+        const isMine = lote && String(lote.owner_id) === String(user);
         if (lote && lote.owner_id) {
           if (isMine) {
             // Meu lote
@@ -134,11 +134,12 @@ const LandLayer = ({ playerPos }) => {
         }
         // Portais: 4 lados
         // Portais: 4 lados, desenhados no centro de cada parede
+        // Portas: 4 retângulos no meio das bordas
         const portals = [
-          { side: 'N', x: px + 112, y: py - 4, w: 32, h: 8 }, // Topo
-          { side: 'S', x: px + 112, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
-          { side: 'E', x: px + LOTE_SIZE - 4, y: py + 112, w: 8, h: 32 }, // Direita
-          { side: 'W', x: px - 4, y: py + 112, w: 8, h: 32 }, // Esquerda
+          { side: 'N', x: px + (LOTE_SIZE / 2) - 16, y: py - 4, w: 32, h: 8 }, // Topo
+          { side: 'S', x: px + (LOTE_SIZE / 2) - 16, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
+          { side: 'E', x: px + LOTE_SIZE - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Direita
+          { side: 'W', x: px - 4, y: py + (LOTE_SIZE / 2) - 16, w: 8, h: 32 }, // Esquerda
         ];
 
         // Mineiro colide com portal?
@@ -161,7 +162,7 @@ const LandLayer = ({ playerPos }) => {
                 }
                 g.lineStyle(2, borderColor, borderAlpha);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
-                // Portais
+                // Portas
                 portals.forEach((portal) => {
                   let color = 0x475569;
                   let alpha = 0.7;
