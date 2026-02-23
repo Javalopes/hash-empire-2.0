@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase.js';
 
 const useGameSync = (userAddress) => {
@@ -24,33 +24,33 @@ const useGameSync = (userAddress) => {
     return () => { supabase.removeChannel(channel); };
   }, [userAddress]);
 
-  // Throttle para gravar no Supabase apenas 1 vez por segundo
-  let lastDbUpdate = 0;
-  let lastRollback = null;
+  // Throttle control com useRef para garantir 1 chamada por segundo
+  const lastDbUpdateRef = useRef(0);
+  const lastRollbackRef = useRef(null);
   const enviarPosicao = async (x, y, rollback) => {
     if (!userAddress) return;
-    // Arredonda valores para evitar floats imprecisos
-    const roundedX = Math.round(Number(x));
-    const roundedY = Math.round(Number(y));
+    // Tipos corretos para RPC
+    const rpcPayload = {
+      p_id: String(userAddress),
+      p_new_x: Number(x),
+      p_new_y: Number(y),
+    };
     // Broadcast rápido para multiplayer
     supabase.channel('mapa_geral').send({
       type: 'broadcast',
       event: 'movimento',
-      payload: { id: userAddress, x: roundedX, y: roundedY },
+      payload: { id: userAddress, x: Number(x), y: Number(y) },
     });
     // Throttle: só grava no Supabase a cada 1 segundo
     const now = Date.now();
-    if (now - lastDbUpdate > 1000) {
-      lastDbUpdate = now;
-      lastRollback = rollback;
-      const { data, error } = await supabase.rpc('mover_mineiro', {
-        p_id: userAddress,
-        p_new_x: roundedX,
-        p_new_y: roundedY,
-      });
+    if (now - lastDbUpdateRef.current > 1000) {
+      lastDbUpdateRef.current = now;
+      lastRollbackRef.current = rollback;
+      console.log('📡 [RPC] Enviando para DB:', rpcPayload);
+      const { data, error } = await supabase.rpc('mover_mineiro', rpcPayload);
       if (error) {
         // Rollback: volta à posição anterior se falhar
-        if (typeof lastRollback === 'function') lastRollback();
+        if (typeof lastRollbackRef.current === 'function') lastRollbackRef.current();
         return;
       }
     }
