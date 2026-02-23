@@ -34,6 +34,7 @@ function isInsideLot(x, y, px, py) {
 const LandLayer = ({ playerPos }) => {
     const { user } = useAuth();
     const [ownedLots, setOwnedLots] = useState([]);
+    const [allLotes, setAllLotes] = useState([]);
 
     useEffect(() => {
       // Carrega todos os lotes ocupados uma vez
@@ -42,6 +43,13 @@ const LandLayer = ({ playerPos }) => {
         .select('*')
         .then(({ data }) => {
           setOwnedLots(data || []);
+        });
+      // Carrega todos os lotes para visibilidade global
+      supabase
+        .from('land_registry')
+        .select('*')
+        .then(({ data }) => {
+          setAllLotes(data || []);
         });
     }, []);
   // Calcula o lote atual do jogador
@@ -103,12 +111,12 @@ const LandLayer = ({ playerPos }) => {
         // Verifica se o mineiro está dentro do lote
         const isPlayerLot = isInsideLot(playerPos.x, playerPos.y, px, py);
         // Busca dono do lote
-        const lote = ownedLots.find(l => l.coord_x === x && l.coord_y === y);
+        const lote = allLotes.find(l => l.coord_x === x && l.coord_y === y);
         let fillColor = null;
         let borderColor = BASE_COLOR;
         let borderAlpha = BASE_ALPHA;
         if (lote && lote.owner_id) {
-          if (lote.owner_id === user) {
+          if (user && lote.owner_id === user.id) {
             // Meu lote
             fillColor = HIGHLIGHT_COLOR;
             borderColor = 0xffd700; // Dourado
@@ -123,11 +131,12 @@ const LandLayer = ({ playerPos }) => {
           borderAlpha = HIGHLIGHT_ALPHA;
         }
         // Portais: 4 lados
+        // Portais: 4 lados, desenhados no centro de cada parede
         const portals = [
-          { side: 'N', x: px + LOTE_SIZE / 2 - 16, y: py - ROAD_SIZE / 2 - 4, w: 32, h: 8 }, // Norte
-          { side: 'S', x: px + LOTE_SIZE / 2 - 16, y: py + LOTE_SIZE + ROAD_SIZE / 2 - 4, w: 32, h: 8 }, // Sul
-          { side: 'E', x: px + LOTE_SIZE + ROAD_SIZE / 2 - 4, y: py + LOTE_SIZE / 2 - 16, w: 8, h: 32 }, // Este
-          { side: 'W', x: px - ROAD_SIZE / 2 - 4, y: py + LOTE_SIZE / 2 - 16, w: 8, h: 32 }, // Oeste
+          { side: 'N', x: px + 112, y: py - 4, w: 32, h: 8 }, // Topo
+          { side: 'S', x: px + 112, y: py + LOTE_SIZE - 4, w: 32, h: 8 }, // Fundo
+          { side: 'E', x: px + LOTE_SIZE - 4, y: py + 112, w: 8, h: 32 }, // Direita
+          { side: 'W', x: px - 4, y: py + 112, w: 8, h: 32 }, // Esquerda
         ];
 
         // Mineiro colide com portal?
@@ -143,7 +152,7 @@ const LandLayer = ({ playerPos }) => {
             <Graphics
               draw={g => {
                 g.clear();
-                if (fillColor && lote && lote.owner_id === user) {
+                if (fillColor && user && lote && lote.owner_id === user.id) {
                   g.beginFill(fillColor, 0.2);
                   g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
                   g.endFill();
@@ -151,18 +160,13 @@ const LandLayer = ({ playerPos }) => {
                 g.lineStyle(2, borderColor, borderAlpha);
                 g.drawRect(px, py, LOTE_SIZE, LOTE_SIZE);
                 // Portais
-                portals.forEach((portal, idx) => {
-                  // Cor base
+                portals.forEach((portal) => {
                   let color = 0x475569;
                   let alpha = 0.7;
-                  // Efeito Neon: se meu lote, brilha ciano
-                  if (lote && lote.owner_id === user) {
+                  // Se o lote for meu, portas ciano
+                  if (user && lote && lote.owner_id === user.id) {
                     color = 0x22d3ee;
                     alpha = 0.9;
-                  }
-                  // Interatividade: se colidindo, brilho máximo
-                  if (portalCollisions[idx]) {
-                    alpha = 1;
                   }
                   g.beginFill(color, alpha);
                   g.drawRect(portal.x, portal.y, portal.w, portal.h);
