@@ -9,8 +9,8 @@ export default function useLand(playerPos) {
   const [buying, setBuying] = useState(false);
   const lastCoords = useRef({ cx: null, cy: null });
 
-  // Função para buscar lote
-  const fetchLote = useCallback(async (cx, cy) => {
+  // Função para buscar lote (fora do useEffect)
+  const fetchLote = async (cx, cy) => {
     setLoading(true);
     const { data: loteData } = await supabase
       .from('land_registry')
@@ -19,18 +19,18 @@ export default function useLand(playerPos) {
       .maybeSingle();
     setCurrentLote(loteData || { coord_x: cx, coord_y: cy, status: 'disponivel', price: 1000, owner: null });
     setLoading(false);
-  }, []);
+  };
 
   // Função para reivindicar lote
   async function reivindicar(cx, cy, wallet) {
-    setBuying(true);
-    const { data, error } = await supabase.rpc('reivindicar_lote', {
+    setLoading(true);
+    await supabase.rpc('reivindicar_lote', {
       p_wallet: wallet,
       p_cx: cx,
       p_cy: cy
     });
-    setBuying(false);
     await fetchLote(cx, cy); // Atualiza HUD imediatamente
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function useLand(playerPos) {
     if (lastCoords.current.cx === cx && lastCoords.current.cy === cy) return;
     lastCoords.current = { cx, cy };
     fetchLote(cx, cy);
-  }, [playerPos, fetchLote]);
+  }, [playerPos]);
 
-  return { currentLote, loading: loading || buying, buying, reivindicar };
+  return { currentLote, reivindicar, loading };
 }
