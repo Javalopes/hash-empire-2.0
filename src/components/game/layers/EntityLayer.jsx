@@ -5,21 +5,21 @@ import { useAuth } from '../../../lib/AuthContext.jsx';
 export default function EntityLayer({ target, onMove, onPositionUpdate }) {
   const { profileData } = useAuth();
   
-  // Referência para a posição atual (essencial para performance no PixiJS)
+  // 1. Referência de posição inicial (Lida do Supabase)
   const pos = useRef({ 
-    x: profileData?.pos_x ?? 500, 
-    y: profileData?.pos_y ?? 500 
+    x: Number(profileData?.pos_x ?? 500), 
+    y: Number(profileData?.pos_y ?? 500) 
   });
   
   const hasSpawned = useRef(false);
 
-  // 1. Sincronização de Spawn Inicial (Teleporte imediato sem deslize)
+  // 2. Sincronização de Spawn (Teleporte inicial sem deslize)
   useEffect(() => {
     if (profileData && !hasSpawned.current) {
       pos.current.x = Number(profileData.pos_x);
       pos.current.y = Number(profileData.pos_y);
       
-      // Forçar a câmara a saltar para aqui logo no início
+      // Atualiza a câmara logo no início
       if (onPositionUpdate) {
         onPositionUpdate(pos.current.x, pos.current.y);
       }
@@ -29,30 +29,30 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
     }
   }, [profileData, onPositionUpdate]);
 
-  // 2. Loop de Movimento (60 FPS)
+  // 3. MOTOR DE MOVIMENTO (useTick corre a 60fps)
   useTick((delta) => {
-    // Se não houver alvo definido pelo clique, o boneco fica parado
-    if (!target) return;
+    // Se não houver alvo ou o perfil não carregou, ficamos parados
+    if (!target || !profileData) return;
 
-    // Cálculo da distância entre posição atual e destino
+    // Diferença entre onde estou e onde quero ir
     const dx = target.x - pos.current.x;
     const dy = target.y - pos.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Se a distância for maior que 1 pixel, executa o deslize (Lerp)
-    if (distance > 1) {
-      // 0.1 é a suavidade do movimento; delta garante consistência de frames
-      const speed = 0.1 * delta;
+    // Só nos movemos se a distância for relevante (evita trepidação)
+    if (distance > 0.5) {
+      // VELOCIDADE AJUSTADA: 0.05 para deslize suave e progressivo
+      const smoothness = 0.05 * Math.min(delta, 2);
       
-      pos.current.x += dx * speed;
-      pos.current.y += dy * speed;
+      pos.current.x += dx * smoothness;
+      pos.current.y += dy * smoothness;
       
-      // ATUALIZA A CÂMARA EM TEMPO REAL (Para o GameStage seguir o boneco)
+      // ATUALIZA A CÂMARA (Faz o mapa deslizar no GameStage)
       if (onPositionUpdate) {
         onPositionUpdate(pos.current.x, pos.current.y);
       }
       
-      // ATUALIZA O MULTIPLAYER E A DB (Avisa os outros e salva posição)
+      // ATUALIZA O MULTIPLAYER (Informa os outros jogadores)
       if (onMove) {
         onMove(pos.current.x, pos.current.y);
       }
@@ -64,18 +64,18 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
       draw={(g) => {
         g.clear();
         
-        // Sombra/Glow do mineiro
-        g.beginFill(0x22d3ee, 0.3);
-        g.drawCircle(pos.current.x, pos.current.y, 16);
+        // Aura Neon Exterior (Brilho)
+        g.beginFill(0x22d3ee, 0.2);
+        g.drawCircle(pos.current.x, pos.current.y, 18);
         g.endFill();
 
-        // Corpo do mineiro (Ciano Néon)
+        // Corpo do Mineiro (Ciano Néon Principal)
         g.beginFill(0x22d3ee, 1);
         g.drawCircle(pos.current.x, pos.current.y, 10);
         g.endFill();
         
-        // Núcleo de energia (Branco)
-        g.beginFill(0xffffff, 0.6);
+        // Núcleo (Ponto de Luz Central)
+        g.beginFill(0xffffff, 0.7);
         g.drawCircle(pos.current.x, pos.current.y, 4);
         g.endFill();
       }}
