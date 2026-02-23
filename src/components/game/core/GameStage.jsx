@@ -3,11 +3,14 @@ import { Stage, Container } from '@pixi/react';
 import BackgroundLayer from '../layers/BackgroundLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
+import useGameSync from '../../../hooks/useGameSync';
 
 const width = window.innerWidth;
 const height = window.innerHeight;
 
 export default function GameStage() {
+  const { otherPlayers } = useGameSync();
+
   const handleClick = useCallback((event) => {
     // Coordenadas do clique
     const rect = event.target.getBoundingClientRect();
@@ -27,8 +30,8 @@ export default function GameStage() {
     >
       <Container>
         <BackgroundLayer />
+        <MultiplayerLayer players={otherPlayers} />
         <EntityLayer />
-        <MultiplayerLayer />
       </Container>
     </Stage>
   );
