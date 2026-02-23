@@ -23,6 +23,8 @@ export default function GameStage() {
   const { currentLote, reivindicar, loading } = useLand(livePos);
 
   const [targetPos, setTargetPos] = useState(null);
+  // Estado de view para HUD
+  const [view, setView] = useState('mapa');
 
     const handleStageClick = (e) => {
     // IMPORTANTE: Coordenada do clique + Deslocamento da Câmara
@@ -56,11 +58,20 @@ export default function GameStage() {
               target={targetPos} 
               onMove={enviarPosicao} 
               onPositionUpdate={(x, y) => { setCamPos({ x, y }); setLivePos({ x, y }); }}
+              currentLote={currentLote}
+              user={user}
+              onEnterEdificio={() => setView('Edificio')}
             />
           </Container>
         </Stage>
-        {/* HUD do Terreno */}
-        {currentLote && !loading && (
+        {/* HUD do Terreno ou Interior */}
+        {view === 'Edificio' ? (
+          <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, pointerEvents: 'auto' }} className="bg-slate-900/90 border-2 border-yellow-400 rounded-lg p-6 shadow-lg min-w-[260px]">
+            <h3 className="text-yellow-400 text-lg font-bold mb-2">INTERIOR DA EDIFICIO</h3>
+            <div className="text-white text-sm mb-1">Bem-vindo ao seu edifício!</div>
+            <button className="mt-4 bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition" onClick={() => setView('mapa')}>SAIR</button>
+          </div>
+        ) : currentLote && !loading && (
           <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, pointerEvents: 'auto' }} className="bg-slate-900/90 border-2 border-cyan-400 rounded-lg p-6 shadow-lg min-w-[260px]">
             <h3 className="text-cyan-400 text-lg font-bold mb-2">INFO DO TERRENO</h3>
             <div className="text-white text-sm mb-1">LOTE: <span className="text-cyan-300">{currentLote.coord_x}, {currentLote.coord_y}</span></div>
