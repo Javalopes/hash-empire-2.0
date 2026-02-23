@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Container, Graphics, Text } from '@pixi/react';
-import { useAuth } from '../../../lib/AuthContext.jsx';
+
 import { supabase } from '../../../lib/supabase';
 import * as PIXI from 'pixi.js';
 
@@ -10,8 +10,7 @@ const MAP_SIZE = 5000;
 const GRID_STEP = LOTE_SIZE + ROAD_SIZE;
 const RADIUS = 1500; 
 
-const LandLayer = ({ playerPos }) => {
-  const { user } = useAuth(); 
+const LandLayer = ({ user, playerPos }) => {
   const [allLotes, setAllLotes] = useState([]);
 
   useEffect(() => {
@@ -31,7 +30,7 @@ const LandLayer = ({ playerPos }) => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Extração limpa da Wallet
+  // Extração limpa da Wallet (sempre do prop user)
   const myWallet = useMemo(() => {
     const raw = typeof user === 'string' ? user : user?.id || '';
     return raw.toString().trim(); 
