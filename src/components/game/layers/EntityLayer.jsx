@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext';
-import { useGameSync } from '../../../hooks/useGameSync.js';
 
 const COLOR = 0x22d3ee;
 const GLOW_COLOR = 0x22d3ee;
@@ -25,48 +24,40 @@ function drawMineiro(x, y) {
   };
 }
 
-const EntityLayer = React.memo(() => {
-  const { profileData, user } = useAuth();
-  const [target, setTarget] = useState({
+const EntityLayer = React.memo(({ target, onMove }) => {
+  const { profileData } = useAuth();
+  const posRef = useRef({
     x: profileData?.pos_x || INIT_X,
     y: profileData?.pos_y || INIT_Y,
   });
-  const [pos, setPos] = useState(target);
-  const posRef = useRef(pos);
-
-  // Multiplayer sync
-  const { enviarPosicao } = useGameSync(user, pos);
+  const [pos, setPos] = useState(posRef.current);
+  const [targetPos, setTargetPos] = useState(target || posRef.current);
 
   useEffect(() => {
-    setTarget({
-      x: profileData?.pos_x || INIT_X,
-      y: profileData?.pos_y || INIT_Y,
-    });
-  }, [profileData]);
+    if (target) setTargetPos(target);
+  }, [target]);
 
   useTick(() => {
-    // Animate position towards target
-    const speed = 0.15;
-    const dx = target.x - posRef.current.x;
-    const dy = target.y - posRef.current.y;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+    const dx = targetPos.x - posRef.current.x;
+    const dy = targetPos.y - posRef.current.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 1) {
+      // Move 5 pixels por frame na direção do destino
+      const angle = Math.atan2(dy, dx);
       posRef.current = {
-        x: posRef.current.x + dx * speed,
-        y: posRef.current.y + dy * speed,
+        x: posRef.current.x + Math.cos(angle) * Math.min(5, dist),
+        y: posRef.current.y + Math.sin(angle) * Math.min(5, dist),
       };
       setPos({ ...posRef.current });
-      // Envia posição durante o movimento
-      if (typeof enviarPosicao === 'function') enviarPosicao(posRef.current.x, posRef.current.y);
+      if (typeof onMove === 'function') onMove(posRef.current.x, posRef.current.y);
     } else {
-      posRef.current = { ...target };
-      setPos({ ...target });
-      if (typeof enviarPosicao === 'function') enviarPosicao(target.x, target.y);
+      posRef.current = { ...targetPos };
+      setPos({ ...targetPos });
+      if (typeof onMove === 'function') onMove(targetPos.x, targetPos.y);
     }
   });
 
   const draw = useMemo(() => drawMineiro(pos.x, pos.y), [pos]);
-
-  EntityLayer.setTarget = setTarget;
 
   return <Graphics draw={draw} />;
 });
