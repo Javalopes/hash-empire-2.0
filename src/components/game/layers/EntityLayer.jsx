@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo, useState } from 'react';
 import { Graphics, useTick } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext';
+import useGameSync from '../../../hooks/useGameSync';
 
 const COLOR = 0x22d3ee;
 const GLOW_COLOR = 0x22d3ee;
@@ -25,13 +26,16 @@ function drawMineiro(x, y) {
 }
 
 const EntityLayer = React.memo(() => {
-  const { profileData } = useAuth();
+  const { profileData, user } = useAuth();
   const [target, setTarget] = useState({
     x: profileData?.pos_x || INIT_X,
     y: profileData?.pos_y || INIT_Y,
   });
   const [pos, setPos] = useState(target);
   const posRef = useRef(pos);
+
+  // Multiplayer sync
+  const sendPosicao = useGameSync(user, pos);
 
   useEffect(() => {
     setTarget({
@@ -51,15 +55,17 @@ const EntityLayer = React.memo(() => {
         y: posRef.current.y + dy * speed,
       };
       setPos({ ...posRef.current });
+      // Envia posição durante o movimento
+      if (typeof sendPosicao === 'function') sendPosicao(posRef.current.x, posRef.current.y);
     } else {
       posRef.current = { ...target };
       setPos({ ...target });
+      if (typeof sendPosicao === 'function') sendPosicao(target.x, target.y);
     }
   });
 
   const draw = useMemo(() => drawMineiro(pos.x, pos.y), [pos]);
 
-  // Expor função para mover
   EntityLayer.setTarget = setTarget;
 
   return <Graphics draw={draw} />;
