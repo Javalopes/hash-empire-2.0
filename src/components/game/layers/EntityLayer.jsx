@@ -60,6 +60,23 @@ export default function EntityLayer({ target, onMove, onPositionUpdate }) {
           pos.current.x = Math.max(0, Math.min(MAP_SIZE, pos.current.x));
           pos.current.y = Math.max(0, Math.min(MAP_SIZE, pos.current.y));
 
-          />
-        );
+  return (
+    <Graphics
+      draw={(g) => {
+        g.clear();
+        // Aura Neon
+        g.beginFill(0x22d3ee, 0.25);
+        g.drawCircle(pos.current.x, pos.current.y, 16);
+        g.endFill();
+        // Corpo do Mineiro (Ciano Sólido)
+        g.beginFill(0x22d3ee, 1);
+        g.drawCircle(pos.current.x, pos.current.y, 10);
+        g.endFill();
+        // Núcleo de Energia (Ponto de Luz)
+        g.beginFill(0xffffff, 0.6);
+        g.drawCircle(pos.current.x, pos.current.y, 4);
+        g.endFill();
+      }}
+    />
+  );
 }
