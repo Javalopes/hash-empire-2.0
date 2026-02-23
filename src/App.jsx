@@ -9,7 +9,6 @@ function GameContent() {
   // Pega posição do mineiro
   // Recebe posição em tempo real do GameStage
   const [livePos, setLivePos] = useState(null);
-  const { currentLote, reivindicar, loading } = useLand(livePos);
 
   if (loading) return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center font-mono text-cyan-400 animate-pulse tracking-[0.5em]">
@@ -19,28 +18,7 @@ function GameContent() {
 
   if (started && user) return <GameStage />;
   if (started && user) return (
-    <>
-      {/* HUD do Terreno */}
-      {currentLote && !loading && (
-        <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, pointerEvents: 'auto' }} className="bg-slate-900/90 border-2 border-cyan-400 rounded-lg p-6 shadow-lg min-w-[260px]">
-          <h3 className="text-cyan-400 text-lg font-bold mb-2">INFO DO TERRENO</h3>
-          <div className="text-white text-sm mb-1">LOTE: <span className="text-cyan-300">{currentLote.coord_x}, {currentLote.coord_y}</span></div>
-          <div className="text-white text-sm mb-1">STATUS: <span className="text-cyan-300">{currentLote.status}</span></div>
-          <div className="text-white text-sm mb-1">PREÇO: <span className="text-cyan-300">{currentLote.price} HASH</span></div>
-          <div className="text-white text-sm mb-3">DONO: <span className="text-cyan-300">{currentLote.owner || '---'}</span></div>
-          {!currentLote.owner_id && currentLote.status === 'disponivel' && (
-            <button
-              className="bg-cyan-400 text-black font-bold px-4 py-2 rounded border border-cyan-400 hover:bg-cyan-300 transition"
-              disabled={loading}
-              onClick={() => reivindicar(currentLote.coord_x, currentLote.coord_y, user)}
-            >
-              {loading ? 'A REIVINDICAR...' : 'REIVINDICAR AGORA'}
-            </button>
-          )}
-        </div>
-      )}
-      <GameStage />
-    </>
+    <GameStage />
   );
 
   return (
