@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useLand from '../../../hooks/useLand';
 import { Stage, Container } from '@pixi/react';
 import { useAuth } from '../../../lib/AuthContext.jsx';
 import useGameSync from '../../../hooks/useGameSync.js';
@@ -8,8 +9,7 @@ import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
-      // Importa o hook de lotes
-      const { currentLote, reivindicar, loading } = require('../../../hooks/useLand.js').default(livePos);
+      const { currentLote, reivindicar, loading } = useLand(livePos);
     const MAP_SIZE = 5000;
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
