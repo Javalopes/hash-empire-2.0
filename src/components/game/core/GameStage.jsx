@@ -1,6 +1,6 @@
 import React from 'react';
 import { Stage, Container } from '@pixi/react';
-import BackgroundLayer from '../BackgroundLayer';
+import BackgroundLayer from '../layers/BackgroundLayer.jsx';
 
 const width = window.innerWidth;
 const height = window.innerHeight;
