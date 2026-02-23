@@ -7,7 +7,7 @@ export default function useLand(playerPos) {
   const [currentLote, setCurrentLote] = useState(null);
   const [loading, setLoading] = useState(false);
   const [buying, setBuying] = useState(false);
-  const lastCoords = useRef({ cx: null, cy: null });
+  const lastCoord = useRef({ cx: -1, cy: -1 });
 
   // Função para buscar lote (fora do useEffect)
   const fetchLote = async (cx, cy) => {
@@ -37,10 +37,10 @@ export default function useLand(playerPos) {
     if (!playerPos) return;
     const cx = Math.floor(playerPos.x / GRID_STEP);
     const cy = Math.floor(playerPos.y / GRID_STEP);
-    console.log('📡 [RADAR] Lote atual:', cx, cy);
     // Só faz pedido se cx/cy mudarem
-    if (lastCoords.current.cx === cx && lastCoords.current.cy === cy) return;
-    lastCoords.current = { cx, cy };
+    if (cx === lastCoord.current.cx && cy === lastCoord.current.cy) return;
+    lastCoord.current = { cx, cy };
+    console.log('📡 [RADAR] Lote atual:', cx, cy);
     fetchLote(cx, cy);
   }, [playerPos]);
 

@@ -9,11 +9,10 @@ import MultiplayerLayer from '../layers/MultiplayerLayer.jsx';
 import EntityLayer from '../layers/EntityLayer.jsx';
 
 export default function GameStage() {
-      const { currentLote, reivindicar, loading } = useLand(livePos);
-    const MAP_SIZE = 5000;
+  const MAP_SIZE = 5000;
   const { user, profileData } = useAuth();
   const { otherPlayers, enviarPosicao } = useGameSync(user);
-  
+
   // Câmara inicia onde o jogador está
   const [camPos, setCamPos] = useState({ 
     x: profileData?.pos_x || 500, 
@@ -21,8 +20,8 @@ export default function GameStage() {
   });
   const [livePos, setLivePos] = useState({ x: profileData?.pos_x || 500, y: profileData?.pos_y || 500 });
 
-  // camPos será passado para useLand
-  
+  const { currentLote, reivindicar, loading } = useLand(livePos);
+
   const [targetPos, setTargetPos] = useState(null);
 
     const handleStageClick = (e) => {
