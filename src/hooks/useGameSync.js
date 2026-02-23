@@ -1,10 +1,38 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase.js';
+
+const useGameSync = (userAddress) => {
+  const [otherPlayers, setOtherPlayers] = useState({});
+
+  useEffect(() => {
+    if (!userAddress) return;
+
+    const channel = supabase.channel('mapa_geral', {
+      config: { broadcast: { self: false } }
+    });
+
+    channel
+      .on('broadcast', { event: 'movimento' }, (payload) => {
+        const { id, x, y } = payload.payload;
+        if (id) {
+          setOtherPlayers(prev => ({ ...prev, [id]: { x, y } }));
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userAddress]);
+
   const enviarPosicao = (x, y) => {
-    if (!user) return;
-    const walletStr = typeof user === 'string' ? user : user.toString();
-    
+    if (!userAddress) return;
     supabase.channel('mapa_geral').send({
       type: 'broadcast',
       event: 'movimento',
-      payload: { id: walletStr, x, y }, // Forçamos o ID como string
+      payload: { id: userAddress, x, y },
     });
   };
+
+  return { otherPlayers, enviarPosicao };
+};
+
+export default useGameSync; // <--- AGORA É DEFAULT EXPORT
